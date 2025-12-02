@@ -13,5 +13,5 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
  * @notice  Centralized access control manager for all Aro Media contracts, owned by the MultiSig.
  */
 contract AroMediaAccessManager is AccessManager, Ownable {
-    constructor(address multiSigOwner) AccessManager(msg.sender) Ownable(multiSigOwner) {}
+    constructor(address multiSigOwner) AccessManager(multiSigOwner) Ownable(multiSigOwner) {}
 }
