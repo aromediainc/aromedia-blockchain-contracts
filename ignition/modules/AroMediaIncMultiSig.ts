@@ -51,7 +51,14 @@ export default buildModule("AroMediaIncMultiSigModule", (m) => {
     );
   }
 
-  const aroMediaIncMultiSig = m.contract("AroMediaIncMultiSig", [signers, threshold]);
+  // ABI-encode each signer address as bytes for MultiSignerERC7913 constructor
+  // The contract expects bytes[] where each element is an ABI-encoded address
+  const { ethers } = require("ethers");
+  const encodedSigners = signers.map((addr: string) =>
+    ethers.AbiCoder.defaultAbiCoder().encode(["address"], [addr])
+  );
+
+  const aroMediaIncMultiSig = m.contract("AroMediaIncMultiSig", [encodedSigners, threshold]);
 
   return { aroMediaIncMultiSig };
 });
