@@ -1,548 +1,369 @@
-# Aro Media Smart Contracts
+<div align="center">
 
-Aro Media's blockchain infrastructure for managing real-world assets (RWA), security tokens, and multi-signature governance.
+# Aro Media
 
-## Overview
+### Blockchain Infrastructure for Real-World Assets
 
-This repository contains four core smart contracts powering the Aro Media ecosystem:
+[![License: BUSL-1.1](https://img.shields.io/badge/License-BUSL--1.1-blue.svg)](https://spdx.org/licenses/BUSL-1.1.html)
+[![Solidity](https://img.shields.io/badge/Solidity-^0.8.27-363636.svg)](https://soliditylang.org/)
+[![OpenZeppelin](https://img.shields.io/badge/OpenZeppelin-v5.5.0-4E5EE4.svg)](https://openzeppelin.com/contracts/)
+[![Tests](https://img.shields.io/badge/Tests-108%20passing-brightgreen.svg)](#testing)
 
-### 1. **AroMediaAccessManager**
+*A comprehensive smart contract suite for tokenizing, governing, and securing real-world assets on the blockchain.*
 
-A centralized access control manager for all Aro Media contracts, owned by the MultiSig wallet.
+[Getting Started](#getting-started) · [Architecture](#architecture) · [Documentation](#documentation) · [Security](#security)
 
-**Key Features:**
+</div>
 
-- Extends OpenZeppelin's `AccessManager` and `Ownable`
-- Single source of truth for role-based access control
-- Manages permissions for all `AccessManaged` contracts
-- Supports role granting, revocation, and scheduling with delays
-- Target function role configuration for fine-grained access control
+---
 
-### 2. **AroMediaAssetsRegistry** (ERC721)
+## About
 
-An NFT-based registry contract for managing and tracking company assets including art, media, intellectual property, and physical items.
+Aro Media is building the infrastructure layer for real-world asset tokenization. Our smart contracts enable organizations to create verifiable on-chain representations of physical and digital assets, govern them through secure multi-signature processes, and trade them as compliant security tokens.
 
-**Key Features:**
+This repository contains the core protocol: four interdependent contracts that work together to provide end-to-end asset management with enterprise-grade security controls.
 
-- ERC721 standard NFT implementation with enumerable support
-- URI storage for asset metadata
-- Pause/unpause functionality for emergency scenarios
-- Access-controlled minting through AccessManaged
-- Token-gating capabilities with ERC721Pausable
+---
 
-### 3. **AroMediaRWA** (ERC20)
+## The Protocol
 
-A security token powering the Aro Media private, asset-backed ecosystem. Acts as the governance and utility token.
-
-**Key Features:**
-
-- ERC20 standard token with advanced extensions
-- Vote delegation via ERC20Votes for governance
-- Token freezing capabilities via ERC20Freezable
-- Cross-chain bridging support via ERC20Bridgeable (Superchain)
-- Permit functionality for gasless approvals (ERC2612)
-- Comprehensive access control via AccessManaged
-- Burn capability for token destruction
-- **Strict allowlist** via ERC20Restricted (see [User Allowlist](#user-allowlist-strict-mode) below)
-- Security contact: security@aro.media
-
-### 4. **AroMediaIncMultiSig**
-
-An advanced multi-signature smart contract wallet supporting complex signing schemes and account abstraction features.
-
-**Key Features:**
-
-- Multi-signature signing with configurable threshold
-- ERC4337 account abstraction (EntryPoint integration)
-- EIP-712 typed data signing
-- ERC7739 advanced signature scheme support
-- ERC7579 modular account extensions with hooks
-- NFT and token receiving capabilities (ERC721, ERC1155)
-- Dynamic signer management
-
-#### Account Abstraction & Advanced Signing (ERC4337/ERC7579/ERC7739)
-
-The MultiSig wallet implements several cutting-edge standards:
-
-- **ERC4337 (Account Abstraction):** Enables smart contract wallets to initiate transactions, pay gas in tokens, and support advanced features like session keys and social recovery.
-- **ERC7579 (Modular Account):** Provides a modular architecture allowing extensions and hooks for custom account logic.
-- **ERC7739 (Advanced Signatures):** Supports multiple signature schemes and validation methods beyond standard ECDSA.
-
-## User Allowlist (Strict Mode)
-
-The `AroMediaRWA` token implements a **strict allowlist** model via `ERC20Restricted`:
-
-> **Important:** Users are NOT allowed by default. They must be explicitly added to the allowlist via `allowUser()` before they can receive or transfer tokens.
-
-```solidity
-// Check if a user is allowed
-bool allowed = token.isUserAllowed(userAddress); // Returns true ONLY if explicitly allowed
-
-// Add user to allowlist (restricted function)
-token.allowUser(userAddress);
-
-// Remove user from allowlist (restricted function)
-token.disallowUser(userAddress);
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                                                                     │
+│   ┌─────────────────┐         ┌─────────────────────────────────┐  │
+│   │                 │         │                                 │  │
+│   │   MultiSig      │────────▶│      Access Manager             │  │
+│   │   Wallet        │  owns   │   (Central Permission Hub)      │  │
+│   │                 │         │                                 │  │
+│   └─────────────────┘         └─────────────┬───────────────────┘  │
+│                                             │                       │
+│                                             │ authorizes            │
+│                               ┌─────────────┴───────────────┐      │
+│                               │                             │      │
+│                               ▼                             ▼      │
+│                   ┌───────────────────┐       ┌───────────────────┐│
+│                   │                   │       │                   ││
+│                   │  Assets Registry  │       │    RWA Token      ││
+│                   │     (ERC721)      │       │     (ERC20)       ││
+│                   │                   │       │                   ││
+│                   └───────────────────┘       └───────────────────┘│
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-This differs from a typical blocklist approach where users are allowed by default. The strict allowlist ensures compliance with securities regulations by requiring explicit approval before token transfers.
+### Access Manager
 
-## Installation
+The central authority for the entire protocol. Every privileged operation flows through here.
+
+- **Role-based permissions** with configurable delays
+- **Target function control** — define exactly which addresses can call which functions
+- **Emergency controls** — close access to any contract instantly
+- Owned by the MultiSig for decentralized governance
+
+### Assets Registry
+
+An NFT registry for company assets. Each token represents ownership or provenance of a real-world item.
+
+- Artwork, media files, intellectual property, physical items
+- On-chain metadata via URI storage
+- Emergency pause for all transfers
+- Enumerable for easy discovery and indexing
+
+### RWA Token
+
+The security token powering the ecosystem. Designed for compliance-first token distribution.
+
+- **Strict allowlist** — users must be approved before receiving tokens
+- **Token freezing** — lock specific amounts per wallet
+- **Governance-ready** — built-in vote delegation
+- **Gas-efficient** — permit-based approvals (no approve transaction needed)
+- **Cross-chain** — Superchain bridge support
+
+### MultiSig Wallet
+
+A next-generation smart contract wallet for organizational governance.
+
+- Configurable M-of-N signing threshold
+- ERC-4337 account abstraction (pay gas in tokens, batched transactions)
+- Modular extensions via ERC-7579
+- Can hold ETH, ERC-20, ERC-721, and ERC-1155 tokens
+
+---
+
+## Getting Started
 
 ### Prerequisites
 
-- Node.js 18+
-- npm or yarn
+- Node.js 18 or later
+- npm, yarn, or pnpm
 
-### Setup
+### Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/AroMedia/aromedia.git
+cd aromedia
+
 # Install dependencies
 npm install
 
-# Configure environment variables
+# Set up environment
 cp .env.example .env
-# Edit .env with your configuration
 ```
+
+Edit `.env` with your configuration. See [Environment Variables](#environment-variables) for details.
+
+### Quick Commands
+
+```bash
+# Compile contracts
+npm run compile
+
+# Run tests
+npm test
+
+# Deploy to local network
+npx hardhat ignition deploy ignition/modules/AroMediaAccessManager.ts
+```
+
+---
+
+## Architecture
+
+### How It All Connects
+
+The protocol follows a hub-and-spoke model where the **Access Manager** sits at the center:
+
+1. The **MultiSig** wallet owns the Access Manager
+2. The Access Manager grants roles to addresses
+3. Roles determine who can call restricted functions on managed contracts
+4. All restricted operations check back with the Access Manager before executing
+
+This architecture means:
+- ✅ Single point of permission management
+- ✅ Audit-friendly (one contract to review for access logic)
+- ✅ Upgradeable permissions without redeploying tokens
+- ✅ Emergency shutoff for any or all contracts
+
+### The Allowlist Model
+
+Unlike typical tokens where anyone can receive transfers, `AroMediaRWA` implements a **strict allowlist**:
+
+```solidity
+// ❌ This will fail — user2 is not on the allowlist
+token.transfer(user2, 1000);
+
+// ✅ First, an authorized operator must allow the recipient
+token.allowUser(user2);
+
+// ✅ Now transfers work
+token.transfer(user2, 1000);
+```
+
+This is designed for securities compliance where KYC/AML verification must occur before token ownership.
+
+### Token Freezing
+
+Administrators can freeze a specific amount of tokens in any wallet:
+
+```solidity
+// User has 1000 tokens
+token.freeze(user, 600);
+
+// Now they can only transfer 400 (the unfrozen portion)
+token.available(user); // Returns 400
+token.frozen(user);    // Returns 600
+```
+
+This enables compliance holds, dispute resolution, or staged vesting.
+
+---
 
 ## Testing
 
-Run the comprehensive test suite:
+The test suite covers 108 scenarios across all four contracts:
 
 ```bash
 npm test
 ```
 
-### Test Coverage
+Tests are organized by contract and use shared fixtures for realistic integration testing. Each test verifies both the happy path and error conditions, including event emissions.
 
-The test suite includes comprehensive integration tests across four contracts:
+| Contract | Tests | Coverage Focus |
+|----------|-------|----------------|
+| Access Manager | 18 | Role management, target configuration, integration |
+| Assets Registry | 31 | Minting, burning, pausing, enumeration |
+| MultiSig | 23 | Signer management, signature validation, token receiving |
+| RWA Token | 36 | Allowlist, freezing, voting, permits |
 
-**AroMediaAccessManager Tests:**
-
-- ✔ Deployment with multiSigOwner as both owner and authority admin
-- ✔ Deployer does not receive admin role (security fix)
-- ✔ Owner can transfer ownership with event emission
-- ✔ Non-owner cannot transfer ownership
-- ✔ Owner can renounce ownership
-- ✔ Admin can grant roles with RoleGranted event
-- ✔ Admin can revoke roles with RoleRevoked event
-- ✔ Non-admin cannot grant roles
-- ✔ User can renounce their own role
-- ✔ Admin can set target function roles with TargetFunctionRoleUpdated event
-- ✔ Admin can close/open targets with TargetClosed event
-- ✔ Authorized caller can execute restricted functions on AssetsRegistry
-- ✔ Unauthorized caller blocked from restricted functions
-- ✔ Authorized caller can execute restricted functions on RWA token
-- ✔ Calls blocked when target is closed
-- ✔ Role grants with execution delay
-- ✔ Setting role grant delay
-
-**AroMediaAssetsRegistry Tests:**
-
-- ✔ Deployment with correct name, symbol
-- ✔ Initial supply of zero
-- ✔ ERC721, ERC721Enumerable, ERC721Metadata interface support
-- ✔ safeMint with authority + Transfer event
-- ✔ safeMint returns correct token ID
-- ✔ safeMint reverts without authority
-- ✔ safeMint reverts to zero address
-- ✔ Token URI with base URI concatenation
-- ✔ Token URI reverts for non-existent token
-- ✔ pause/unpause with Paused/Unpaused events
-- ✔ Unauthorized pause/unpause reverts
-- ✔ Transfers blocked when paused
-- ✔ Minting blocked when paused
-- ✔ Transfers allowed after unpause
-- ✔ Token owner can burn with Transfer event
-- ✔ Non-owner burn reverts
-- ✔ Approved operator can burn
-- ✔ Enumerable: tokenByIndex, tokenOfOwnerByIndex
-- ✔ Enumerable state updates after burn
-
-**AroMediaIncMultiSig Tests:**
-
-- ✔ Deployment with single/multiple signers
-- ✔ Threshold configuration
-- ✔ ERC721Holder and ERC1155Holder interface support
-- ✔ Signer management functions available (addSigners, removeSigners, setThreshold)
-- ✔ Signer management reverts for non-entrypoint/self callers
-- ✔ isValidSignature returns invalid for empty/random signatures
-- ✔ ERC721 token receiving with Transfer event
-- ✔ onERC721Received returns correct magic value
-- ✔ onERC1155Received and onERC1155BatchReceived magic values
-- ✔ ETH receiving capability
-
-**AroMediaRWA Tests:**
-
-- ✔ Deployment with name, symbol, decimals
-- ✔ Initial supply of zero
-- ✔ CLOCK_MODE and clock() for voting
-- ✔ ERC165 interface support
-- ✔ Nonce initialization
-- ✔ mint with authority + Transfer event
-- ✔ mint reverts without authority
-- ✔ mint reverts to non-allowed user (strict allowlist)
-- ✔ allowUser/disallowUser functionality
-- ✔ Unauthorized allowUser/disallowUser reverts
-- ✔ Transfers blocked for non-allowed users
-- ✔ Transfers allowed between allowed users
-- ✔ pause/unpause with events
-- ✔ Transfers/minting blocked when paused
-- ✔ freeze with frozen()/available() verification
-- ✔ Transfers blocked when exceeding available balance
-- ✔ Transfers allowed within available balance
-- ✔ Unauthorized freeze reverts
-- ✔ Unfreezing by setting freeze to 0
-- ✔ burn and burnFrom with Transfer event
-- ✔ ERC20Permit: permit-based approvals with signature
-- ✔ Permit reverts with expired deadline
-- ✔ ERC20Votes: delegate with DelegateChanged event
-- ✔ Self-delegation
-- ✔ Voting power updates after transfers
-- ✔ Historical voting power with getPastVotes
-- ✔ Approval and transferFrom
-
-All tests passing ✓
+---
 
 ## Deployment
 
-### Prerequisites
+### Recommended Order
 
-Before deploying, ensure you have:
-
-1. **Environment Variables Configured**
-
-```bash
-# Copy the example env file
-cp .env.example .env
-
-# Configure the following variables:
-AUTHORITY=<MultiSig or AccessManager address>  # Falls back to dead address if not set
-```
-
-2. **Network Configuration**
-
-Edit `hardhat.config.ts` to add your network RPC endpoints and ensure proper network configuration.
+1. **Deploy MultiSig** — This becomes your governance wallet
+2. **Deploy Access Manager** — Pass the MultiSig address as owner
+3. **Deploy Registry & Token** — Pass the Access Manager address as authority
+4. **Configure Roles** — Grant minting/admin roles through the Access Manager
 
 ### Using Hardhat Ignition
 
-Hardhat Ignition orchestrates contract deployments with proper dependency management. The deployment flow follows this order:
+```bash
+# Set environment variables
+export MULTISIG_SIGNERS="0xAddr1,0xAddr2,0xAddr3"
+export MULTISIG_THRESHOLD=2
+export AUTHORITY=0xAccessManagerAddress
 
-1. **AroMediaAccessManager** - Deployed first, owned by the MultiSig
-2. **AroMediaAssetsRegistry** - Uses AccessManager as authority
-3. **AroMediaRWA** - Uses AccessManager as authority
-4. **AroMediaIncMultiSig** - Multi-sig wallet for governance
+# Deploy to a network
+npx hardhat ignition deploy ignition/modules/AroMediaIncMultiSig.ts --network base-sepolia
+npx hardhat ignition deploy ignition/modules/AroMediaAccessManager.ts --network base-sepolia
+npx hardhat ignition deploy ignition/modules/AroMediaAssetsRegistry.ts --network base-sepolia
+npx hardhat ignition deploy ignition/modules/AroMediaRWA.ts --network base-sepolia
+```
 
-#### Step 1: Deploy AccessManager
+### Verification
 
 ```bash
-npx hardhat ignition deploy ignition/modules/AroMediaAccessManager.ts --network <network-name>
+npx hardhat verify --network base-sepolia <CONTRACT_ADDRESS> <CONSTRUCTOR_ARGS>
 ```
 
-The AccessManager will be owned by the address specified in the `AUTHORITY` environment variable or default to the dead address (`0x0000...0000`).
+Deployed addresses are saved in `ignition/deployments/<network>/deployed_addresses.json`.
 
-#### Step 2: Deploy Other Contracts
+---
 
-The other contracts can be deployed in any order as they all reference the AccessManager:
+## Environment Variables
 
-```bash
-# Deploy AroMediaAssetsRegistry
-npx hardhat ignition deploy ignition/modules/AroMediaAssetsRegistry.ts --network <network-name>
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `PRIVATE_KEY` | Yes | Deployer wallet private key |
+| `MULTISIG_SIGNERS` | Yes | Comma-separated signer addresses |
+| `MULTISIG_THRESHOLD` | Yes | Required signatures (e.g., `2`) |
+| `AUTHORITY` | Yes | Access Manager address (for managed contracts) |
+| `BASE_SEPOLIA_RPC_URL` | For deployment | RPC endpoint |
+| `BASESCAN_API_KEY` | For verification | Block explorer API key |
 
-# Deploy AroMediaRWA
-npx hardhat ignition deploy ignition/modules/AroMediaRWA.ts --network <network-name>
+See `.env.example` for a complete template.
 
-# Deploy AroMediaIncMultiSig (requires signers and threshold)
-npx hardhat ignition deploy ignition/modules/AroMediaIncMultiSig.ts --network <network-name>
-```
+---
 
-#### Example: Full Deployment with Environment Variables
+## Documentation
 
-```bash
-# Set the MultiSig address as authority
-export AUTHORITY=0x1234567890abcdef1234567890abcdef12345678
+### Contract Reference
 
-# Deploy to Sepolia testnet
-npx hardhat ignition deploy ignition/modules/AroMediaAccessManager.ts --network sepolia
-npx hardhat ignition deploy ignition/modules/AroMediaAssetsRegistry.ts --network sepolia
-npx hardhat ignition deploy ignition/modules/AroMediaRWA.ts --network sepolia
-npx hardhat ignition deploy ignition/modules/AroMediaIncMultiSig.ts --network sepolia
-```
+<details>
+<summary><strong>AroMediaAccessManager</strong></summary>
 
-### Supported Networks
+The permission layer for all protocol contracts.
 
-- **Hardhat** - Local testing and development
-- **Sepolia** - Ethereum testnet
-- **Mainnet** - Ethereum production (use with caution)
-- **Optimism and other Superchain networks** - For ERC20Bridgeable support
+| Function | Who Can Call | What It Does |
+|----------|--------------|--------------|
+| `grantRole(roleId, account, delay)` | Admin | Give an address a role |
+| `revokeRole(roleId, account)` | Admin | Remove a role from an address |
+| `setTargetFunctionRole(target, selectors, roleId)` | Admin | Assign a role requirement to functions |
+| `setTargetClosed(target, closed)` | Admin | Emergency: block all calls to a contract |
+| `transferOwnership(newOwner)` | Owner | Change the owner (typically MultiSig) |
 
-### Deployment Outputs
+</details>
 
-After deployment, Hardhat Ignition creates:
-- `ignition/deployments/<network>/` folder containing deployment data
-- `ignition/deployments/<network>/deployment-manifest.json` with all deployed addresses
+<details>
+<summary><strong>AroMediaAssetsRegistry</strong></summary>
 
-Save these addresses for contract interactions and verification.
+ERC-721 NFTs representing real-world assets.
 
-## Contract Verification
+| Function | Who Can Call | What It Does |
+|----------|--------------|--------------|
+| `safeMint(to, uri)` | Authorized role | Create a new asset NFT |
+| `burn(tokenId)` | Token owner | Destroy an NFT |
+| `pause()` / `unpause()` | Authorized role | Emergency transfer control |
+| `tokenURI(tokenId)` | Anyone | Get metadata location |
 
-After deployment, verify your contracts on block explorers (e.g., Etherscan) to ensure transparency and user trust.
+Base URI: `https://aro.media/asset-registry/`
 
-### Using Hardhat-Verify
+</details>
 
-Install the Hardhat verification plugin:
+<details>
+<summary><strong>AroMediaRWA</strong></summary>
 
-```bash
-npm install --save-dev @nomicfoundation/hardhat-verify
-```
+ERC-20 security token with compliance features.
 
-Configure in `hardhat.config.ts`:
+| Function | Who Can Call | What It Does |
+|----------|--------------|--------------|
+| `mint(to, amount)` | Authorized role | Create new tokens |
+| `allowUser(user)` | Authorized role | Add to transfer allowlist |
+| `disallowUser(user)` | Authorized role | Remove from allowlist |
+| `freeze(user, amount)` | Authorized role | Lock tokens in a wallet |
+| `delegate(delegatee)` | Token holder | Assign voting power |
+| `permit(...)` | Anyone (with valid sig) | Gasless approval |
 
-```typescript
-import "@nomicfoundation/hardhat-verify";
+</details>
 
-export default {
-  etherscan: {
-    apiKey: {
-      sepolia: process.env.ETHERSCAN_API_KEY || "",
-      mainnet: process.env.ETHERSCAN_API_KEY || "",
-    },
-  },
-};
-```
+<details>
+<summary><strong>AroMediaIncMultiSig</strong></summary>
 
-### Verification Commands
+Smart contract wallet for governance.
 
-Verify individual contracts using the deployed addresses:
+| Function | Who Can Call | What It Does |
+|----------|--------------|--------------|
+| `addSigners(signers)` | Self/EntryPoint | Add authorized signers |
+| `removeSigners(signers)` | Self/EntryPoint | Remove signers |
+| `setThreshold(n)` | Self/EntryPoint | Change required signatures |
+| `isValidSignature(hash, sig)` | Anyone | ERC-1271 signature check |
 
-```bash
-# Verify AroMediaAccessManager
-npx hardhat verify --network <network-name> <AccessManager_Address> <MultiSig_Owner_Address>
+Supports receiving ETH, ERC-20, ERC-721, and ERC-1155.
 
-# Verify AroMediaAssetsRegistry
-npx hardhat verify --network <network-name> <Registry_Address> <AccessManager_Address>
+</details>
 
-# Verify AroMediaRWA
-npx hardhat verify --network <network-name> <RWA_Address> <AccessManager_Address>
+---
 
-# Verify AroMediaIncMultiSig
-npx hardhat verify --network <network-name> <MultiSig_Address> <signers_array> <threshold>
-```
+## Security
 
-### Example Verification
+### Reporting Vulnerabilities
 
-```bash
-# Get deployed addresses from ignition/deployments/<network>/deployment-manifest.json
+**Please do not open public issues for security vulnerabilities.**
 
-# Verify AccessManager (assuming address: 0xabc...)
-npx hardhat verify --network sepolia 0xabc123... 0xdef456...
+Email: **security@aro.media**
 
-# Verify Assets Registry
-npx hardhat verify --network sepolia 0xghi789... 0xabc123...
+We follow responsible disclosure. Valid reports may be eligible for our bug bounty program.
 
-# Verify RWA Token
-npx hardhat verify --network sepolia 0xjkl012... 0xabc123...
-```
+### Audit Status
 
-### Manual Verification
-
-If automatic verification fails:
-
-1. Go to your network's block explorer (e.g., etherscan.io)
-2. Navigate to your contract address
-3. Click "Contract" tab → "Verify and Publish"
-4. Choose verification method:
-   - **Solidity (Standard-json-input)** - Upload compiled JSON from `artifacts/`
-   - **Solidity (Flattened)** - Provide flattened source code
-   - **Solidity (Multi-file)** - Upload multiple files
-
-### Verification Checklist
-
-- [ ] Obtain correct contract address from deployment manifest
-- [ ] Gather correct constructor arguments (encode with ABI if needed)
-- [ ] Ensure compiler version matches (^0.8.27)
-- [ ] Verify optimization settings (check `hardhat.config.ts`)
-- [ ] Confirm all dependencies are properly linked
-- [ ] Test verification on testnet before mainnet
-
-## Contract Architecture
-
-### Access Control
-
-All contracts implement `AccessManaged` from OpenZeppelin Contracts v5.5.0, providing role-based access control:
-
-- **Restricted Functions:**
-  - `AroMediaAccessManager`: All AccessManager functions (grantRole, revokeRole, setTargetFunctionRole, etc.) require admin role
-  - `AroMediaAssetsRegistry`: `pause()`, `unpause()`, `safeMint()`
-  - `AroMediaRWA`: `pause()`, `unpause()`, `mint()`, `freeze()`, `allowUser()`, `disallowUser()`
-  - `AroMediaIncMultiSig`: `addSigners()`, `removeSigners()`, `setThreshold()` (require EntryPoint or self-call)
-
-These functions require proper authorization through an `AccessManager` contract.
-
-### Security Features
-
-1. **AccessManager Authority**: Single source of truth for all role-based permissions
-2. **ERC721URIStorage**: Secure metadata storage for NFTs
-3. **ERC20Permit**: EIP-2612 permit-based approval mechanism
-4. **ERC7739**: Advanced cryptographic signature validation
-5. **ERC7579**: Modular account features with hooks
-6. **ERC4337**: Account abstraction for smart contract wallets
-7. **Burnable Tokens**: Permanent token removal capability
-8. **Freezable Assets**: Ability to freeze specific amounts per user
-9. **Strict Allowlist**: Users must be explicitly allowed before transfers
-10. **Multi-Signature Validation**: Multiple signer requirements with configurable threshold
-11. **Pausable Contracts**: Emergency pause capability for NFT and token contracts
-
-## API Reference
-
-### AroMediaAccessManager
-
-| Function | Access | Description |
-|----------|--------|-------------|
-| `grantRole(uint64 roleId, address account, uint32 executionDelay)` | Admin | Grant a role to an account |
-| `revokeRole(uint64 roleId, address account)` | Admin | Revoke a role from an account |
-| `renounceRole(uint64 roleId, address callerConfirmation)` | Role holder | Renounce your own role |
-| `setTargetFunctionRole(address target, bytes4[] selectors, uint64 roleId)` | Admin | Set required role for target functions |
-| `setTargetClosed(address target, bool closed)` | Admin | Close/open a target contract |
-| `setGrantDelay(uint64 roleId, uint32 newDelay)` | Admin | Set grant delay for a role |
-| `hasRole(uint64 roleId, address account)` | View | Check if account has role |
-| `transferOwnership(address newOwner)` | Owner | Transfer contract ownership |
-| `renounceOwnership()` | Owner | Renounce contract ownership |
-
-### AroMediaAssetsRegistry
-
-| Function | Access | Description |
-|----------|--------|-------------|
-| `safeMint(address to, string uri)` | Restricted | Mint new NFT with metadata URI |
-| `burn(uint256 tokenId)` | Token owner/approved | Burn a token |
-| `pause()` | Restricted | Pause all token transfers |
-| `unpause()` | Restricted | Unpause token transfers |
-| `tokenURI(uint256 tokenId)` | View | Get token metadata URI |
-| `totalSupply()` | View | Get total number of tokens |
-| `tokenByIndex(uint256 index)` | View | Get token ID at index |
-| `tokenOfOwnerByIndex(address owner, uint256 index)` | View | Get token of owner at index |
-| `supportsInterface(bytes4 interfaceId)` | View | ERC165 interface detection |
-
-### AroMediaRWA
-
-| Function | Access | Description |
-|----------|--------|-------------|
-| `mint(address to, uint256 amount)` | Restricted | Mint new tokens |
-| `burn(uint256 amount)` | Token holder | Burn your tokens |
-| `burnFrom(address account, uint256 amount)` | Approved | Burn from approved account |
-| `pause()` | Restricted | Pause all token transfers |
-| `unpause()` | Restricted | Unpause token transfers |
-| `freeze(address user, uint256 amount)` | Restricted | Freeze specific amount for user |
-| `frozen(address user)` | View | Get frozen amount for user |
-| `available(address user)` | View | Get available (unfrozen) balance |
-| `allowUser(address user)` | Restricted | Add user to allowlist |
-| `disallowUser(address user)` | Restricted | Remove user from allowlist |
-| `isUserAllowed(address user)` | View | Check if user is explicitly allowed |
-| `delegate(address delegatee)` | Token holder | Delegate voting power |
-| `getVotes(address account)` | View | Get current voting power |
-| `getPastVotes(address account, uint256 timepoint)` | View | Get historical voting power |
-| `permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)` | Public | Gasless approval via signature |
-| `clock()` | View | Get current voting clock (timestamp) |
-| `CLOCK_MODE()` | View | Get clock mode string |
-
-### AroMediaIncMultiSig
-
-| Function | Access | Description |
-|----------|--------|-------------|
-| `addSigners(bytes[] signers)` | EntryPoint/Self | Add new signers |
-| `removeSigners(bytes[] signers)` | EntryPoint/Self | Remove signers |
-| `setThreshold(uint64 threshold)` | EntryPoint/Self | Update signing threshold |
-| `isValidSignature(bytes32 hash, bytes signature)` | View | Validate signature (ERC1271) |
-| `onERC721Received(...)` | Public | ERC721 token receiver |
-| `onERC1155Received(...)` | Public | ERC1155 token receiver |
-| `onERC1155BatchReceived(...)` | Public | ERC1155 batch token receiver |
-
-## Dependencies
-
-- **@openzeppelin/contracts** (v5.5.0): Industry-standard contract implementations
-- **openzeppelin-community-contracts**: Community-maintained contract extensions
-- **hardhat**: Development and testing framework
-- **ethers.js**: Blockchain interaction library
-- **typescript**: Type-safe contract development
-
-## Security Considerations
-
-### Audits
-
-For production deployments, conduct thorough security audits of all contracts.
-
-### Vulnerability Reporting
-
-Security vulnerabilities should be reported to **security@aro.media**
-
-Do not disclose vulnerabilities publicly before a fix is released.
+These contracts have not yet been audited. A professional security audit is planned before mainnet deployment.
 
 ### Best Practices
 
-1. Use `AccessManager` for fine-grained access control before production
-2. Configure appropriate threshold values for `AroMediaIncMultiSig`
-3. Test token freezing and allowlist features thoroughly
-4. Maintain secure custody of private keys for signers
-5. Monitor cross-chain bridging operations carefully
+When deploying to production:
 
-## Contract Interactions
+1. Use a hardware wallet for the deployer account
+2. Set up the MultiSig with geographically distributed signers
+3. Start with a conservative threshold (e.g., 3-of-5)
+4. Test the full permission flow on testnet first
+5. Keep the Access Manager owner key in cold storage
 
-### Minting an Asset NFT
+---
 
-```typescript
-const registry = new ethers.Contract(
-  registryAddress,
-  AroMediaAssetsRegistryABI,
-  signer
-);
+## Contributing
 
-const tokenId = await registry.safeMint(
-  ownerAddress,
-  "ipfs://metadata-hash"
-);
-```
+We welcome contributions. Please read our contributing guidelines before submitting a PR.
 
-### Minting Security Tokens
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/improvement`)
+3. Write tests for new functionality
+4. Ensure all tests pass (`npm test`)
+5. Submit a pull request
 
-```typescript
-const token = new ethers.Contract(
-  tokenAddress,
-  AroMediaRWAABI,
-  signer
-);
-
-await token.mint(recipientAddress, ethers.parseEther("1000"));
-```
-
-### Multi-Signature Operations
-
-```typescript
-const wallet = new ethers.Contract(
-  walletAddress,
-  AroMediaIncMultiSigABI,
-  signer
-);
-
-// Add signers
-await wallet.addSigners([newSignerAddress]);
-
-// Update threshold
-await wallet.setThreshold(2);
-```
+---
 
 ## License
 
-BUSL-1.1 (Business Source License) - See individual contract headers for details.
+This project is licensed under the **Business Source License 1.1** (BUSL-1.1).
 
-## Support
+You may use this code for non-production purposes. For commercial/production use, please contact us for licensing.
 
-For technical support or questions:
+---
 
-- Create an issue in this repository
-- Contact: security@aro.media
+<div align="center">
 
-## Development Team
+**Built by [Aro Media Dev Lab](https://aro.media)**
 
-**Aro Media Dev Lab**
-
-Follow the code comments for implementation notes and security guidance embedded throughout the contracts.
+</div>
