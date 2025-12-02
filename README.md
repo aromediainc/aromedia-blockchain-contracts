@@ -1,19 +1,32 @@
-<div align="center">
+<h1 align="center">Aro Media Blockchain Smart Contracts</h1>
 
-# Aro Media
+<p align="center">
+    <i> A comprehensive smart contract suite for tokenizing, governing, and securing real-world asset-backed securities on the blockchain. </i>
+</p>
 
-### Blockchain Infrastructure for Real-World Assets
+<h3 align="center">Blockchain Infrastructure for Real-World Assets</h3>
 
-[![License: BUSL-1.1](https://img.shields.io/badge/License-BUSL--1.1-blue.svg)](https://spdx.org/licenses/BUSL-1.1.html)
-[![Solidity](https://img.shields.io/badge/Solidity-^0.8.27-363636.svg)](https://soliditylang.org/)
-[![OpenZeppelin](https://img.shields.io/badge/OpenZeppelin-v5.5.0-4E5EE4.svg)](https://openzeppelin.com/contracts/)
-[![Tests](https://img.shields.io/badge/Tests-108%20passing-brightgreen.svg)](#testing)
+<p align="center">
+  <a href="https://spdx.org/licenses/BUSL-1.1.html">
+    <img src="https://img.shields.io/badge/License-BUSL--1.1-blue.svg" alt="License: BUSL-1.1">
+  </a>
+  <a href="https://soliditylang.org/">
+    <img src="https://img.shields.io/badge/Solidity-^0.8.27-363636.svg" alt="Solidity">
+  </a>
+  <a href="https://openzeppelin.com/contracts/">
+    <img src="https://img.shields.io/badge/OpenZeppelin-v5.5.0-4E5EE4.svg" alt="OpenZeppelin">
+  </a>
+  <a href="#testing">
+    <img src="https://img.shields.io/badge/Tests-108%20passing-brightgreen.svg" alt="Tests">
+  </a>
+</p>
 
-*A comprehensive smart contract suite for tokenizing, governing, and securing real-world assets on the blockchain.*
-
-[Getting Started](#getting-started) · [Architecture](#architecture) · [Documentation](#documentation) · [Security](#security)
-
-</div>
+<p align="center">
+  <a href="#getting-started">Getting Started</a> ·
+  <a href="#architecture">Architecture</a> ·
+  <a href="#documentation">Documentation</a> ·
+  <a href="#security">Security</a>
+</p>
 
 ---
 
@@ -140,6 +153,7 @@ The protocol follows a hub-and-spoke model where the **Access Manager** sits at 
 4. All restricted operations check back with the Access Manager before executing
 
 This architecture means:
+
 - ✅ Single point of permission management
 - ✅ Audit-friendly (one contract to review for access logic)
 - ✅ Upgradeable permissions without redeploying tokens
@@ -189,12 +203,12 @@ npm test
 
 Tests are organized by contract and use shared fixtures for realistic integration testing. Each test verifies both the happy path and error conditions, including event emissions.
 
-| Contract | Tests | Coverage Focus |
-|----------|-------|----------------|
-| Access Manager | 18 | Role management, target configuration, integration |
-| Assets Registry | 31 | Minting, burning, pausing, enumeration |
-| MultiSig | 23 | Signer management, signature validation, token receiving |
-| RWA Token | 36 | Allowlist, freezing, voting, permits |
+| Contract        | Tests | Coverage Focus                                           |
+| --------------- | ----- | -------------------------------------------------------- |
+| Access Manager  | 18    | Role management, target configuration, integration       |
+| Assets Registry | 31    | Minting, burning, pausing, enumeration                   |
+| MultiSig        | 23    | Signer management, signature validation, token receiving |
+| RWA Token       | 36    | Allowlist, freezing, voting, permits                     |
 
 ---
 
@@ -234,14 +248,14 @@ Deployed addresses are saved in `ignition/deployments/<network>/deployed_address
 
 ## Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `PRIVATE_KEY` | Yes | Deployer wallet private key |
-| `MULTISIG_SIGNERS` | Yes | Comma-separated signer addresses |
-| `MULTISIG_THRESHOLD` | Yes | Required signatures (e.g., `2`) |
-| `AUTHORITY` | Yes | Access Manager address (for managed contracts) |
-| `BASE_SEPOLIA_RPC_URL` | For deployment | RPC endpoint |
-| `BASESCAN_API_KEY` | For verification | Block explorer API key |
+| Variable                 | Required         | Description                                    |
+| ------------------------ | ---------------- | ---------------------------------------------- |
+| `PRIVATE_KEY`          | Yes              | Deployer wallet private key                    |
+| `MULTISIG_SIGNERS`     | Yes              | Comma-separated signer addresses               |
+| `MULTISIG_THRESHOLD`   | Yes              | Required signatures (e.g.,`2`)               |
+| `AUTHORITY`            | Yes              | Access Manager address (for managed contracts) |
+| `BASE_SEPOLIA_RPC_URL` | For deployment   | RPC endpoint                                   |
+| `BASESCAN_API_KEY`     | For verification | Block explorer API key                         |
 
 See `.env.example` for a complete template.
 
@@ -256,13 +270,13 @@ See `.env.example` for a complete template.
 
 The permission layer for all protocol contracts.
 
-| Function | Who Can Call | What It Does |
-|----------|--------------|--------------|
-| `grantRole(roleId, account, delay)` | Admin | Give an address a role |
-| `revokeRole(roleId, account)` | Admin | Remove a role from an address |
-| `setTargetFunctionRole(target, selectors, roleId)` | Admin | Assign a role requirement to functions |
-| `setTargetClosed(target, closed)` | Admin | Emergency: block all calls to a contract |
-| `transferOwnership(newOwner)` | Owner | Change the owner (typically MultiSig) |
+| Function                                             | Who Can Call | What It Does                             |
+| ---------------------------------------------------- | ------------ | ---------------------------------------- |
+| `grantRole(roleId, account, delay)`                | Admin        | Give an address a role                   |
+| `revokeRole(roleId, account)`                      | Admin        | Remove a role from an address            |
+| `setTargetFunctionRole(target, selectors, roleId)` | Admin        | Assign a role requirement to functions   |
+| `setTargetClosed(target, closed)`                  | Admin        | Emergency: block all calls to a contract |
+| `transferOwnership(newOwner)`                      | Owner        | Change the owner (typically MultiSig)    |
 
 </details>
 
@@ -271,12 +285,12 @@ The permission layer for all protocol contracts.
 
 ERC-721 NFTs representing real-world assets.
 
-| Function | Who Can Call | What It Does |
-|----------|--------------|--------------|
-| `safeMint(to, uri)` | Authorized role | Create a new asset NFT |
-| `burn(tokenId)` | Token owner | Destroy an NFT |
+| Function                    | Who Can Call    | What It Does               |
+| --------------------------- | --------------- | -------------------------- |
+| `safeMint(to, uri)`       | Authorized role | Create a new asset NFT     |
+| `burn(tokenId)`           | Token owner     | Destroy an NFT             |
 | `pause()` / `unpause()` | Authorized role | Emergency transfer control |
-| `tokenURI(tokenId)` | Anyone | Get metadata location |
+| `tokenURI(tokenId)`       | Anyone          | Get metadata location      |
 
 Base URI: `https://aro.media/asset-registry/`
 
@@ -287,14 +301,14 @@ Base URI: `https://aro.media/asset-registry/`
 
 ERC-20 security token with compliance features.
 
-| Function | Who Can Call | What It Does |
-|----------|--------------|--------------|
-| `mint(to, amount)` | Authorized role | Create new tokens |
-| `allowUser(user)` | Authorized role | Add to transfer allowlist |
-| `disallowUser(user)` | Authorized role | Remove from allowlist |
-| `freeze(user, amount)` | Authorized role | Lock tokens in a wallet |
-| `delegate(delegatee)` | Token holder | Assign voting power |
-| `permit(...)` | Anyone (with valid sig) | Gasless approval |
+| Function                 | Who Can Call            | What It Does              |
+| ------------------------ | ----------------------- | ------------------------- |
+| `mint(to, amount)`     | Authorized role         | Create new tokens         |
+| `allowUser(user)`      | Authorized role         | Add to transfer allowlist |
+| `disallowUser(user)`   | Authorized role         | Remove from allowlist     |
+| `freeze(user, amount)` | Authorized role         | Lock tokens in a wallet   |
+| `delegate(delegatee)`  | Token holder            | Assign voting power       |
+| `permit(...)`          | Anyone (with valid sig) | Gasless approval          |
 
 </details>
 
@@ -303,12 +317,12 @@ ERC-20 security token with compliance features.
 
 Smart contract wallet for governance.
 
-| Function | Who Can Call | What It Does |
-|----------|--------------|--------------|
-| `addSigners(signers)` | Self/EntryPoint | Add authorized signers |
-| `removeSigners(signers)` | Self/EntryPoint | Remove signers |
-| `setThreshold(n)` | Self/EntryPoint | Change required signatures |
-| `isValidSignature(hash, sig)` | Anyone | ERC-1271 signature check |
+| Function                        | Who Can Call    | What It Does               |
+| ------------------------------- | --------------- | -------------------------- |
+| `addSigners(signers)`         | Self/EntryPoint | Add authorized signers     |
+| `removeSigners(signers)`      | Self/EntryPoint | Remove signers             |
+| `setThreshold(n)`             | Self/EntryPoint | Change required signatures |
+| `isValidSignature(hash, sig)` | Anyone          | ERC-1271 signature check   |
 
 Supports receiving ETH, ERC-20, ERC-721, and ERC-1155.
 
@@ -358,7 +372,7 @@ We welcome contributions. Please read our contributing guidelines before submitt
 
 This project is licensed under the **Business Source License 1.1** (BUSL-1.1).
 
-You may use this code for non-production purposes. For commercial/production use, please contact us for licensing.
+You may use this code for non-production purposes. For commercial/production use, please contact Aro Media Inc. for licensing.
 
 ---
 
