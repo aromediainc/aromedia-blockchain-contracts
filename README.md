@@ -71,7 +71,53 @@ The central authority for the entire protocol. Every privileged operation flows 
 - **Role-based permissions** with configurable delays
 - **Target function control** — define exactly which addresses can call which functions
 - **Emergency controls** — close access to any contract instantly
+- **Role labeling** — human-readable names for all roles via `getRoleLabel()`
 - Owned by the MultiSig for decentralized governance
+
+#### Roles
+
+The Access Manager defines 10 roles for fine-grained access control:
+
+| Role ID | Name                  | Permissions                                         |
+| ------- | --------------------- | --------------------------------------------------- |
+| 0       | `ORG_ADMIN`           | Full control. Assign/revoke roles, emergency actions|
+| 1       | `PROTOCOL_ADMIN`      | Manage protocol parameters, enable/disable features |
+| 2       | `TREASURY_CONTROLLER` | Move/manage protocol funds, handle distributions    |
+| 3       | `MARKET_MAKER`        | Manage liquidity, run buyback/sellback logic        |
+| 4       | `MINTER`              | Mint ERC-20/721/1155 tokens (scoped to assets)      |
+| 5       | `BURNER`              | Burn tokens (separate from Minter for safety)       |
+| 6       | `PAUSER`              | Pause/unpause contracts                             |
+| 7       | `OPERATOR`            | Routine ops (allowlists, metadata, keys)            |
+| 8       | `AUDITOR`             | Read-only compliance access                         |
+| 9       | `INTEGRATION_BOT`     | Limited automation and scheduled tasks              |
+
+#### Role → Function Wiring
+
+After deployment, the owner (MultiSig) must wire roles to contract functions:
+
+```solidity
+// Wire all contracts in a single transaction
+accessManager.wireAllContracts(rwaTokenAddress, assetsRegistryAddress);
+
+// Or wire individually
+accessManager.wireRWAToken(rwaTokenAddress);
+accessManager.wireAssetsRegistry(assetsRegistryAddress);
+```
+
+**AroMediaRWA (ERC-20):**
+| Function         | Required Role   |
+| ---------------- | --------------- |
+| `mint`           | MINTER (4)      |
+| `pause/unpause`  | PAUSER (6)      |
+| `allowUser`      | OPERATOR (7)    |
+| `disallowUser`   | OPERATOR (7)    |
+| `freeze`         | OPERATOR (7)    |
+
+**AroMediaAssetsRegistry (ERC-721):**
+| Function         | Required Role   |
+| ---------------- | --------------- |
+| `safeMint`       | MINTER (4)      |
+| `pause/unpause`  | PAUSER (6)      |
 
 ### Assets Registry
 
@@ -219,7 +265,21 @@ Tests are organized by contract and use shared fixtures for realistic integratio
 1. **Deploy MultiSig** — This becomes your governance wallet
 2. **Deploy Access Manager** — Pass the MultiSig address as owner
 3. **Deploy Registry & Token** — Pass the Access Manager address as authority
-4. **Configure Roles** — Grant minting/admin roles through the Access Manager
+4. **Configure Roles** — Grant roles and wire functions through the Access Manager
+
+### Post-Deployment Role Setup
+
+After deploying all contracts, the MultiSig owner must:
+
+```solidity
+// 1. Wire function permissions (as owner)
+accessManager.wireAllContracts(rwaTokenAddress, assetsRegistryAddress);
+
+// 2. Grant roles to appropriate addresses (as admin)
+accessManager.grantRole(ROLE_MINTER, minterAddress, 0);      // Minting authority
+accessManager.grantRole(ROLE_PAUSER, safetyOfficer, 0);      // Emergency pause
+accessManager.grantRole(ROLE_OPERATOR, operatorAddress, 0);  // Allowlist management
+```
 
 ### Using Hardhat Ignition
 
@@ -270,6 +330,8 @@ See `.env.example` for a complete template.
 
 The permission layer for all protocol contracts.
 
+**Role Management:**
+
 | Function                                             | Who Can Call | What It Does                             |
 | ---------------------------------------------------- | ------------ | ---------------------------------------- |
 | `grantRole(roleId, account, delay)`                | Admin        | Give an address a role                   |
@@ -277,6 +339,37 @@ The permission layer for all protocol contracts.
 | `setTargetFunctionRole(target, selectors, roleId)` | Admin        | Assign a role requirement to functions   |
 | `setTargetClosed(target, closed)`                  | Admin        | Emergency: block all calls to a contract |
 | `transferOwnership(newOwner)`                      | Owner        | Change the owner (typically MultiSig)    |
+
+**Role Wiring (Owner Only):**
+
+| Function                                    | What It Does                                     |
+| ------------------------------------------- | ------------------------------------------------ |
+| `wireRWAToken(rwaToken)`                    | Configure roles for RWA token functions          |
+| `wireAssetsRegistry(assetsRegistry)`        | Configure roles for Assets Registry functions    |
+| `wireAllContracts(rwaToken, assetsRegistry)`| Configure all managed contracts in one tx        |
+
+**Role Utilities:**
+
+| Function                  | What It Does                                     |
+| ------------------------- | ------------------------------------------------ |
+| `getRoleLabel(roleId)`    | Get human-readable name for a role ID            |
+| `getAllRoles()`           | Get all role IDs and their labels                |
+| `ROLE_COUNT`              | Total number of defined roles (10)               |
+
+**Role Constants:**
+
+| Constant                 | Value | Description                              |
+| ------------------------ | ----- | ---------------------------------------- |
+| `ROLE_ORG_ADMIN`         | 0     | Full control, admin of all roles         |
+| `ROLE_PROTOCOL_ADMIN`    | 1     | Protocol parameter management            |
+| `ROLE_TREASURY_CONTROLLER`| 2    | Fund management and distributions        |
+| `ROLE_MARKET_MAKER`      | 3     | Liquidity operations                     |
+| `ROLE_MINTER`            | 4     | Token minting                            |
+| `ROLE_BURNER`            | 5     | Token burning                            |
+| `ROLE_PAUSER`            | 6     | Contract pause/unpause                   |
+| `ROLE_OPERATOR`          | 7     | Routine operations                       |
+| `ROLE_AUDITOR`           | 8     | Read-only compliance access              |
+| `ROLE_INTEGRATION_BOT`   | 9     | Automation and scheduled tasks           |
 
 </details>
 
