@@ -82,6 +82,59 @@ contract AroMediaAccessManager is AccessManager, Ownable {
      */
     uint64 public constant ROLE_INTEGRATION_BOT = 9;
 
+    /**
+     * @notice Total number of defined roles
+     */
+    uint64 public constant ROLE_COUNT = 10;
+
+    // =========================================================================
+    // ROLE LABELING
+    // =========================================================================
+
+    /**
+     * @notice Get a human-readable label for a role ID
+     * @param roleId The role ID to get the label for
+     * @return The string label for the role, or "UNKNOWN" if not defined
+     */
+    function getRoleLabel(uint64 roleId) public pure returns (string memory) {
+        if (roleId == ROLE_ORG_ADMIN) return "ORG_ADMIN";
+        if (roleId == ROLE_PROTOCOL_ADMIN) return "PROTOCOL_ADMIN";
+        if (roleId == ROLE_TREASURY_CONTROLLER) return "TREASURY_CONTROLLER";
+        if (roleId == ROLE_MARKET_MAKER) return "MARKET_MAKER";
+        if (roleId == ROLE_MINTER) return "MINTER";
+        if (roleId == ROLE_BURNER) return "BURNER";
+        if (roleId == ROLE_PAUSER) return "PAUSER";
+        if (roleId == ROLE_OPERATOR) return "OPERATOR";
+        if (roleId == ROLE_AUDITOR) return "AUDITOR";
+        if (roleId == ROLE_INTEGRATION_BOT) return "INTEGRATION_BOT";
+        return "UNKNOWN";
+    }
+
+    /**
+     * @notice Get all role IDs with their labels
+     * @return roleIds Array of all defined role IDs
+     * @return labels Array of corresponding role labels
+     */
+    function getAllRoles() public pure returns (uint64[] memory roleIds, string[] memory labels) {
+        roleIds = new uint64[](ROLE_COUNT);
+        labels = new string[](ROLE_COUNT);
+        
+        roleIds[0] = ROLE_ORG_ADMIN;
+        roleIds[1] = ROLE_PROTOCOL_ADMIN;
+        roleIds[2] = ROLE_TREASURY_CONTROLLER;
+        roleIds[3] = ROLE_MARKET_MAKER;
+        roleIds[4] = ROLE_MINTER;
+        roleIds[5] = ROLE_BURNER;
+        roleIds[6] = ROLE_PAUSER;
+        roleIds[7] = ROLE_OPERATOR;
+        roleIds[8] = ROLE_AUDITOR;
+        roleIds[9] = ROLE_INTEGRATION_BOT;
+        
+        for (uint64 i = 0; i < ROLE_COUNT; i++) {
+            labels[i] = getRoleLabel(roleIds[i]);
+        }
+    }
+
     // =========================================================================
     // CONSTRUCTOR
     // =========================================================================
