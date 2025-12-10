@@ -10,7 +10,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
  * @author  Aro Media Dev Lab.
  * @title   Aro Media Access Manager.
  * @dev     Report Any Vulnerabilities to security@aro.media.
- * @notice  Centralized access control manager for all Aro Media contracts, owned by the MultiSig.
+ * @notice  Centralized access control manager for all Aro Media contracts, owned by the Company's MultiSig.
  */
 contract AroMediaAccessManager is AccessManager, Ownable {
     // =========================================================================
