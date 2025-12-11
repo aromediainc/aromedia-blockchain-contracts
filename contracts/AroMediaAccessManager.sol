@@ -166,6 +166,8 @@ contract AroMediaAccessManager is AccessManager, Ownable {
      *      - ROLE_MINTER: mint
      *      - ROLE_PAUSER: pause, unpause
      *      - ROLE_OPERATOR: allowUser, disallowUser, freeze
+     *      - ROLE_PROTOCOL_ADMIN: setForcedTransferManager
+     *      Note: forcedTransfer uses onlyForcedTransferManager modifier (not AccessManaged)
      */
     function wireRWAToken(address rwaToken) external onlyOwner {
         // Minting: ROLE_MINTER
@@ -179,6 +181,41 @@ contract AroMediaAccessManager is AccessManager, Ownable {
         _setTargetFunctionRole(rwaToken, bytes4(keccak256("allowUser(address)")), ROLE_OPERATOR);
         _setTargetFunctionRole(rwaToken, bytes4(keccak256("disallowUser(address)")), ROLE_OPERATOR);
         _setTargetFunctionRole(rwaToken, bytes4(keccak256("freeze(address,uint256)")), ROLE_OPERATOR);
+
+        // Forced Transfer Manager configuration: ROLE_PROTOCOL_ADMIN
+        _setTargetFunctionRole(rwaToken, bytes4(keccak256("setForcedTransferManager(address)")), ROLE_PROTOCOL_ADMIN);
+    }
+
+    // =========================================================================
+    // ROLE WIRING - FORCED TRANSFER MANAGER
+    // =========================================================================
+
+    /**
+     * @notice Configure function permissions for the ForcedTransferManager contract
+     * @param forcedTransferManager Address of the ForcedTransferManager contract
+     * @dev Sets up the following role -> function mappings:
+     *      - ROLE_ORG_ADMIN: configure, setRWAToken, setAssetsRegistry
+     *      - ROLE_TREASURY_CONTROLLER: initiate, approveTreasury, execute
+     *      - ROLE_AUDITOR: approveAuditor
+     *      - ROLE_ORG_ADMIN: approveOrgAdmin, cancel
+     */
+    function wireForcedTransferManager(address forcedTransferManager) external onlyOwner {
+        // Configuration: ROLE_ORG_ADMIN
+        _setTargetFunctionRole(forcedTransferManager, bytes4(keccak256("configure(address,address)")), ROLE_ORG_ADMIN);
+        _setTargetFunctionRole(forcedTransferManager, bytes4(keccak256("setRWAToken(address)")), ROLE_ORG_ADMIN);
+        _setTargetFunctionRole(forcedTransferManager, bytes4(keccak256("setAssetsRegistry(address)")), ROLE_ORG_ADMIN);
+
+        // Initiation & Execution: ROLE_TREASURY_CONTROLLER
+        _setTargetFunctionRole(forcedTransferManager, bytes4(keccak256("initiate(address,address,uint256,uint256,string)")), ROLE_TREASURY_CONTROLLER);
+        _setTargetFunctionRole(forcedTransferManager, bytes4(keccak256("approveTreasury(uint256)")), ROLE_TREASURY_CONTROLLER);
+        _setTargetFunctionRole(forcedTransferManager, bytes4(keccak256("execute(uint256)")), ROLE_TREASURY_CONTROLLER);
+
+        // Auditor Approval: ROLE_AUDITOR
+        _setTargetFunctionRole(forcedTransferManager, bytes4(keccak256("approveAuditor(uint256)")), ROLE_AUDITOR);
+
+        // Org Admin Approval & Cancellation: ROLE_ORG_ADMIN
+        _setTargetFunctionRole(forcedTransferManager, bytes4(keccak256("approveOrgAdmin(uint256)")), ROLE_ORG_ADMIN);
+        _setTargetFunctionRole(forcedTransferManager, bytes4(keccak256("cancel(uint256)")), ROLE_ORG_ADMIN);
     }
 
     // =========================================================================
@@ -209,24 +246,62 @@ contract AroMediaAccessManager is AccessManager, Ownable {
      * @notice Configure all managed contracts in a single transaction
      * @param rwaToken Address of the AroMediaRWA contract
      * @param assetsRegistry Address of the AroMediaAssetsRegistry contract
+     * @param forcedTransferManager Address of the ForcedTransferManager contract
      */
-    function wireAllContracts(address rwaToken, address assetsRegistry) external onlyOwner {
-        // Wire RWA Token - Minting
-        _setTargetFunctionRole(rwaToken, bytes4(keccak256("mint(address,uint256)")), ROLE_MINTER);
+    function wireAllContracts(
+        address rwaToken, 
+        address assetsRegistry, 
+        address forcedTransferManager
+    ) external onlyOwner {
+        // =====================================================================
+        // Wire RWA Token
+        // =====================================================================
         
-        // Wire RWA Token - Pausing
+        // Issuance: ROLE_MINTER
+        _setTargetFunctionRole(rwaToken, bytes4(keccak256("issue(address,uint256)")), ROLE_MINTER);
+        
+        // Pausing: ROLE_PAUSER
         _setTargetFunctionRole(rwaToken, bytes4(keccak256("pause()")), ROLE_PAUSER);
         _setTargetFunctionRole(rwaToken, bytes4(keccak256("unpause()")), ROLE_PAUSER);
         
-        // Wire RWA Token - Operator functions
+        // User allowlist management: ROLE_OPERATOR
         _setTargetFunctionRole(rwaToken, bytes4(keccak256("allowUser(address)")), ROLE_OPERATOR);
         _setTargetFunctionRole(rwaToken, bytes4(keccak256("disallowUser(address)")), ROLE_OPERATOR);
         _setTargetFunctionRole(rwaToken, bytes4(keccak256("freeze(address,uint256)")), ROLE_OPERATOR);
 
-        // Wire Assets Registry - Minting
+        // Forced Transfer Manager configuration: ROLE_PROTOCOL_ADMIN
+        // Note: forcedTransfer uses onlyForcedTransferManager modifier (not AccessManaged)
+        _setTargetFunctionRole(rwaToken, bytes4(keccak256("setForcedTransferManager(address)")), ROLE_PROTOCOL_ADMIN);
+
+        // =====================================================================
+        // Wire Forced Transfer Manager
+        // =====================================================================
+        
+        // Configuration: ROLE_ORG_ADMIN
+        _setTargetFunctionRole(forcedTransferManager, bytes4(keccak256("configure(address,address)")), ROLE_ORG_ADMIN);
+        _setTargetFunctionRole(forcedTransferManager, bytes4(keccak256("setRWAToken(address)")), ROLE_ORG_ADMIN);
+        _setTargetFunctionRole(forcedTransferManager, bytes4(keccak256("setAssetsRegistry(address)")), ROLE_ORG_ADMIN);
+
+        // Initiation & Execution: ROLE_TREASURY_CONTROLLER
+        _setTargetFunctionRole(forcedTransferManager, bytes4(keccak256("initiate(address,address,uint256,uint256,string)")), ROLE_TREASURY_CONTROLLER);
+        _setTargetFunctionRole(forcedTransferManager, bytes4(keccak256("approveTreasury(uint256)")), ROLE_TREASURY_CONTROLLER);
+        _setTargetFunctionRole(forcedTransferManager, bytes4(keccak256("execute(uint256)")), ROLE_TREASURY_CONTROLLER);
+
+        // Auditor Approval: ROLE_AUDITOR
+        _setTargetFunctionRole(forcedTransferManager, bytes4(keccak256("approveAuditor(uint256)")), ROLE_AUDITOR);
+
+        // Org Admin Approval & Cancellation: ROLE_ORG_ADMIN
+        _setTargetFunctionRole(forcedTransferManager, bytes4(keccak256("approveOrgAdmin(uint256)")), ROLE_ORG_ADMIN);
+        _setTargetFunctionRole(forcedTransferManager, bytes4(keccak256("cancel(uint256)")), ROLE_ORG_ADMIN);
+
+        // =====================================================================
+        // Wire Assets Registry
+        // =====================================================================
+        
+        // Minting: ROLE_MINTER
         _setTargetFunctionRole(assetsRegistry, bytes4(keccak256("safeMint(address,string)")), ROLE_MINTER);
         
-        // Wire Assets Registry - Pausing
+        // Pausing: ROLE_PAUSER
         _setTargetFunctionRole(assetsRegistry, bytes4(keccak256("pause()")), ROLE_PAUSER);
         _setTargetFunctionRole(assetsRegistry, bytes4(keccak256("unpause()")), ROLE_PAUSER);
     }
