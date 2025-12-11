@@ -4,7 +4,7 @@
     <i> A comprehensive smart contract suite for tokenizing, governing, and securing real-world asset-backed securities on the blockchain. </i>
 </p>
 
-<h3 align="center">Blockchain Infrastructure for Real-World Assets</h3>
+<h3 align="center">Blockchain Infrastructure for Aro Media's Real-World Assets</h3>
 
 <p align="center">
   <a href="https://spdx.org/licenses/BUSL-1.1.html">
@@ -32,7 +32,7 @@
 
 ## About
 
-Aro Media is building the infrastructure layer for real-world asset tokenization. Our smart contracts enable organizations to create verifiable on-chain representations of physical and digital assets, govern them through secure multi-signature processes, and trade them as compliant security tokens.
+Aro Media is building the infrastructure layer for real-world asset tokenization. Our smart contracts enables the organization to create verifiable on-chain representations of physical and digital assets, govern them through secure multi-signature processes, and trade them as compliant security tokens.
 
 This repository contains the core protocol: five interdependent contracts that work together to provide end-to-end asset management with enterprise-grade security controls.
 
@@ -82,18 +82,18 @@ The central authority for the entire protocol. Every privileged operation flows 
 
 The Access Manager defines 10 roles for fine-grained access control:
 
-| Role ID | Name                  | Permissions                                         |
-| ------- | --------------------- | --------------------------------------------------- |
-| 0       | `ORG_ADMIN`           | Full control. Assign/revoke roles, emergency actions|
-| 1       | `PROTOCOL_ADMIN`      | Manage protocol parameters, enable/disable features |
-| 2       | `TREASURY_CONTROLLER` | Move/manage protocol funds, handle distributions    |
-| 3       | `MARKET_MAKER`        | Manage liquidity, run buyback/sellback logic        |
-| 4       | `MINTER`              | Mint ERC-20/721/1155 tokens (scoped to assets)      |
-| 5       | `BURNER`              | Burn tokens (separate from Minter for safety)       |
-| 6       | `PAUSER`              | Pause/unpause contracts                             |
-| 7       | `OPERATOR`            | Routine ops (allowlists, metadata, keys)            |
-| 8       | `AUDITOR`             | Read-only compliance access                         |
-| 9       | `INTEGRATION_BOT`     | Limited automation and scheduled tasks              |
+| Role ID | Name                    | Permissions                                          |
+| ------- | ----------------------- | ---------------------------------------------------- |
+| 0       | `ORG_ADMIN`           | Full control. Assign/revoke roles, emergency actions |
+| 1       | `PROTOCOL_ADMIN`      | Manage protocol parameters, enable/disable features  |
+| 2       | `TREASURY_CONTROLLER` | Move/manage protocol funds, handle distributions     |
+| 3       | `MARKET_MAKER`        | Manage liquidity, run buyback/sellback logic         |
+| 4       | `MINTER`              | Mint ERC-20/721/1155 tokens (scoped to assets)       |
+| 5       | `BURNER`              | Burn tokens (separate from Minter for safety)        |
+| 6       | `PAUSER`              | Pause/unpause contracts                              |
+| 7       | `OPERATOR`            | Routine ops (allowlists, metadata, keys)             |
+| 8       | `AUDITOR`             | Read-only compliance access                          |
+| 9       | `INTEGRATION_BOT`     | Limited automation and scheduled tasks               |
 
 #### Role → Function Wiring
 
@@ -110,31 +110,34 @@ accessManager.wireForcedTransferManager(forcedTransferManagerAddress);
 ```
 
 **AroMediaRWA (ERC-20):**
-| Function                   | Required Role       |
-| -------------------------- | ------------------- |
-| `issue`                    | MINTER (4)          |
-| `pause/unpause`            | PAUSER (6)          |
-| `allowUser`                | OPERATOR (7)        |
-| `disallowUser`             | OPERATOR (7)        |
-| `freeze`                   | OPERATOR (7)        |
-| `setForcedTransferManager` | PROTOCOL_ADMIN (1)  |
+
+| Function                     | Required Role      |
+| ---------------------------- | ------------------ |
+| `issue`                    | MINTER (4)         |
+| `pause/unpause`            | PAUSER (6)         |
+| `allowUser`                | OPERATOR (7)       |
+| `disallowUser`             | OPERATOR (7)       |
+| `freeze`                   | OPERATOR (7)       |
+| `setForcedTransferManager` | PROTOCOL_ADMIN (1) |
 
 **ForcedTransferManager:**
-| Function          | Required Role            |
-| ----------------- | ------------------------ |
-| `configure`       | ORG_ADMIN (0)            |
-| `initiate`        | TREASURY_CONTROLLER (2)  |
-| `approveTreasury` | TREASURY_CONTROLLER (2)  |
-| `approveAuditor`  | AUDITOR (8)              |
-| `approveOrgAdmin` | ORG_ADMIN (0)            |
-| `execute`         | TREASURY_CONTROLLER (2)  |
-| `cancel`          | ORG_ADMIN (0)            |
+
+| Function            | Required Role           |
+| ------------------- | ----------------------- |
+| `configure`       | ORG_ADMIN (0)           |
+| `initiate`        | TREASURY_CONTROLLER (2) |
+| `approveTreasury` | TREASURY_CONTROLLER (2) |
+| `approveAuditor`  | AUDITOR (8)             |
+| `approveOrgAdmin` | ORG_ADMIN (0)           |
+| `execute`         | TREASURY_CONTROLLER (2) |
+| `cancel`          | ORG_ADMIN (0)           |
 
 **AroMediaAssetsRegistry (ERC-721):**
-| Function         | Required Role   |
-| ---------------- | --------------- |
-| `safeMint`       | MINTER (4)      |
-| `pause/unpause`  | PAUSER (6)      |
+
+| Function          | Required Role |
+| ----------------- | ------------- |
+| `safeMint`      | MINTER (4)    |
+| `pause/unpause` | PAUSER (6)    |
 
 ### Assets Registry
 
@@ -276,13 +279,13 @@ npm test
 
 Tests are organized by contract and use shared fixtures for realistic integration testing. Each test verifies both the happy path and error conditions, including event emissions.
 
-| Contract               | Tests | Coverage Focus                                                |
-| ---------------------- | ----- | ------------------------------------------------------------- |
-| Access Manager         | 18    | Role management, target configuration, integration            |
-| Assets Registry        | 31    | Minting, burning, pausing, enumeration                        |
-| MultiSig               | 23    | Signer management, signature validation, token receiving      |
-| RWA Token              | 36    | Allowlist, freezing, voting, permits                          |
-| Forced Transfer Manager| 43    | Three-party approval workflow, dossier verification, execution|
+| Contract                | Tests | Coverage Focus                                                 |
+| ----------------------- | ----- | -------------------------------------------------------------- |
+| Access Manager          | 18    | Role management, target configuration, integration             |
+| Assets Registry         | 31    | Minting, burning, pausing, enumeration                         |
+| MultiSig                | 23    | Signer management, signature validation, token receiving       |
+| RWA Token               | 36    | Allowlist, freezing, voting, permits                           |
+| Forced Transfer Manager | 43    | Three-party approval workflow, dossier verification, execution |
 
 ---
 
@@ -381,35 +384,35 @@ The permission layer for all protocol contracts.
 
 **Role Wiring (Owner Only):**
 
-| Function                                                      | What It Does                                     |
-| ------------------------------------------------------------- | ------------------------------------------------ |
-| `wireRWAToken(rwaToken)`                                      | Configure roles for RWA token functions          |
-| `wireAssetsRegistry(assetsRegistry)`                          | Configure roles for Assets Registry functions    |
-| `wireForcedTransferManager(forcedTransferManager)`            | Configure roles for Forced Transfer Manager      |
-| `wireAllContracts(rwaToken, assetsRegistry, forcedTransfer)`  | Configure all managed contracts in one tx        |
+| Function                                                       | What It Does                                  |
+| -------------------------------------------------------------- | --------------------------------------------- |
+| `wireRWAToken(rwaToken)`                                     | Configure roles for RWA token functions       |
+| `wireAssetsRegistry(assetsRegistry)`                         | Configure roles for Assets Registry functions |
+| `wireForcedTransferManager(forcedTransferManager)`           | Configure roles for Forced Transfer Manager   |
+| `wireAllContracts(rwaToken, assetsRegistry, forcedTransfer)` | Configure all managed contracts in one tx     |
 
 **Role Utilities:**
 
-| Function                  | What It Does                                     |
-| ------------------------- | ------------------------------------------------ |
-| `getRoleLabel(roleId)`    | Get human-readable name for a role ID            |
-| `getAllRoles()`           | Get all role IDs and their labels                |
-| `ROLE_COUNT`              | Total number of defined roles (10)               |
+| Function                 | What It Does                          |
+| ------------------------ | ------------------------------------- |
+| `getRoleLabel(roleId)` | Get human-readable name for a role ID |
+| `getAllRoles()`        | Get all role IDs and their labels     |
+| `ROLE_COUNT`           | Total number of defined roles (10)    |
 
 **Role Constants:**
 
-| Constant                 | Value | Description                              |
-| ------------------------ | ----- | ---------------------------------------- |
-| `ROLE_ORG_ADMIN`         | 0     | Full control, admin of all roles         |
-| `ROLE_PROTOCOL_ADMIN`    | 1     | Protocol parameter management            |
-| `ROLE_TREASURY_CONTROLLER`| 2    | Fund management and distributions        |
-| `ROLE_MARKET_MAKER`      | 3     | Liquidity operations                     |
-| `ROLE_MINTER`            | 4     | Token minting                            |
-| `ROLE_BURNER`            | 5     | Token burning                            |
-| `ROLE_PAUSER`            | 6     | Contract pause/unpause                   |
-| `ROLE_OPERATOR`          | 7     | Routine operations                       |
-| `ROLE_AUDITOR`           | 8     | Read-only compliance access              |
-| `ROLE_INTEGRATION_BOT`   | 9     | Automation and scheduled tasks           |
+| Constant                     | Value | Description                       |
+| ---------------------------- | ----- | --------------------------------- |
+| `ROLE_ORG_ADMIN`           | 0     | Full control, admin of all roles  |
+| `ROLE_PROTOCOL_ADMIN`      | 1     | Protocol parameter management     |
+| `ROLE_TREASURY_CONTROLLER` | 2     | Fund management and distributions |
+| `ROLE_MARKET_MAKER`        | 3     | Liquidity operations              |
+| `ROLE_MINTER`              | 4     | Token minting                     |
+| `ROLE_BURNER`              | 5     | Token burning                     |
+| `ROLE_PAUSER`              | 6     | Contract pause/unpause            |
+| `ROLE_OPERATOR`            | 7     | Routine operations                |
+| `ROLE_AUDITOR`             | 8     | Read-only compliance access       |
+| `ROLE_INTEGRATION_BOT`     | 9     | Automation and scheduled tasks    |
 
 </details>
 
@@ -434,16 +437,16 @@ Base URI: `https://aro.media/asset-registry/`
 
 ERC-20 security token with compliance features.
 
-| Function                         | Who Can Call              | What It Does                      |
-| -------------------------------- | ------------------------- | --------------------------------- |
-| `issue(to, amount)`              | Authorized role           | Create new tokens                 |
-| `allowUser(user)`                | Authorized role           | Add to transfer allowlist         |
-| `disallowUser(user)`             | Authorized role           | Remove from allowlist             |
-| `freeze(user, amount)`           | Authorized role           | Lock tokens in a wallet           |
-| `setForcedTransferManager(addr)` | PROTOCOL_ADMIN            | Link to ForcedTransferManager     |
-| `forcedTransfer(from, to, amt)`  | ForcedTransferManager     | Execute regulatory transfer       |
-| `delegate(delegatee)`            | Token holder              | Assign voting power               |
-| `permit(...)`                    | Anyone (with valid sig)   | Gasless approval                  |
+| Function                           | Who Can Call            | What It Does                  |
+| ---------------------------------- | ----------------------- | ----------------------------- |
+| `issue(to, amount)`              | Authorized role         | Create new tokens             |
+| `allowUser(user)`                | Authorized role         | Add to transfer allowlist     |
+| `disallowUser(user)`             | Authorized role         | Remove from allowlist         |
+| `freeze(user, amount)`           | Authorized role         | Lock tokens in a wallet       |
+| `setForcedTransferManager(addr)` | PROTOCOL_ADMIN          | Link to ForcedTransferManager |
+| `forcedTransfer(from, to, amt)`  | ForcedTransferManager   | Execute regulatory transfer   |
+| `delegate(delegatee)`            | Token holder            | Assign voting power           |
+| `permit(...)`                    | Anyone (with valid sig) | Gasless approval              |
 
 </details>
 
@@ -469,6 +472,7 @@ Supports receiving ETH, ERC-20, ERC-721, and ERC-1155.
 Regulatory-compliant forced transfer workflow with three-party approval.
 
 **Workflow:**
+
 1. TREASURY_CONTROLLER initiates with dossier NFT proof
 2. Different TREASURY_CONTROLLER approves (separation of duties)
 3. AUDITOR reviews and approves
@@ -477,31 +481,31 @@ Regulatory-compliant forced transfer workflow with three-party approval.
 
 **Configuration:**
 
-| Function                          | Who Can Call    | What It Does                          |
-| --------------------------------- | --------------- | ------------------------------------- |
-| `configure(token, registry)`      | ORG_ADMIN       | Set token and registry addresses      |
-| `setRWAToken(token)`              | ORG_ADMIN       | Update RWA token address              |
-| `setAssetsRegistry(registry)`     | ORG_ADMIN       | Update Assets Registry address        |
+| Function                        | Who Can Call | What It Does                     |
+| ------------------------------- | ------------ | -------------------------------- |
+| `configure(token, registry)`  | ORG_ADMIN    | Set token and registry addresses |
+| `setRWAToken(token)`          | ORG_ADMIN    | Update RWA token address         |
+| `setAssetsRegistry(registry)` | ORG_ADMIN    | Update Assets Registry address   |
 
 **Initiation & Execution:**
 
-| Function                                     | Who Can Call         | What It Does                              |
-| -------------------------------------------- | -------------------- | ----------------------------------------- |
-| `initiate(from, to, amount, dossier, reason)`| TREASURY_CONTROLLER  | Create new forced transfer request        |
-| `approveTreasury(requestId)`                 | TREASURY_CONTROLLER  | Treasury signoff (not initiator)          |
-| `approveAuditor(requestId)`                  | AUDITOR              | Auditor compliance signoff                |
-| `approveOrgAdmin(requestId)`                 | ORG_ADMIN            | Final organizational approval             |
-| `execute(requestId)`                         | TREASURY_CONTROLLER  | Execute fully-approved transfer           |
-| `cancel(requestId)`                          | ORG_ADMIN            | Cancel pending/approved request           |
+| Function                                        | Who Can Call        | What It Does                       |
+| ----------------------------------------------- | ------------------- | ---------------------------------- |
+| `initiate(from, to, amount, dossier, reason)` | TREASURY_CONTROLLER | Create new forced transfer request |
+| `approveTreasury(requestId)`                  | TREASURY_CONTROLLER | Treasury signoff (not initiator)   |
+| `approveAuditor(requestId)`                   | AUDITOR             | Auditor compliance signoff         |
+| `approveOrgAdmin(requestId)`                  | ORG_ADMIN           | Final organizational approval      |
+| `execute(requestId)`                          | TREASURY_CONTROLLER | Execute fully-approved transfer    |
+| `cancel(requestId)`                           | ORG_ADMIN           | Cancel pending/approved request    |
 
 **View Functions:**
 
-| Function                  | What It Does                                     |
-| ------------------------- | ------------------------------------------------ |
-| `getRequest(id)`          | Get full details of a forced transfer request    |
-| `getRequestCount()`       | Total number of requests created                 |
-| `isDossierUsed(tokenId)`  | Check if a dossier NFT has been used             |
-| `isFullyApproved(id)`     | Check if all three approvals are complete        |
+| Function                   | What It Does                                  |
+| -------------------------- | --------------------------------------------- |
+| `getRequest(id)`         | Get full details of a forced transfer request |
+| `getRequestCount()`      | Total number of requests created              |
+| `isDossierUsed(tokenId)` | Check if a dossier NFT has been used          |
+| `isFullyApproved(id)`    | Check if all three approvals are complete     |
 
 </details>
 
