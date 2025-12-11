@@ -22,7 +22,7 @@ const config: HardhatUserConfig = {
     },
     // Ethereum Sepolia testnet
     'sepolia': {
-      url: 'https://sepolia.infura.io/v3/' + (process.env.INFURA_API_KEY || ''),
+      url: 'https://ethereum-sepolia-rpc.publicnode.com',
       accounts: [process.env.WALLET_KEY as string],
     },
     // Base mainnet
