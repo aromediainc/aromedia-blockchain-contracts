@@ -11,3 +11,6 @@ artifacts
 .DS_Store
 lib/openzeppelin-community*
 admin-portal
+
+# Auto-generated verification arguments
+arguments/
