@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "hardhat test",
+    "compile": "hardhat compile",
     "setupcom": "node scripts/setup-community-contracts.js",
     "postinstall": "node scripts/setup-community-contracts.js"
   },
