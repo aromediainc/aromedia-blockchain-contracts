@@ -156,7 +156,6 @@ The security token powering the ecosystem. Designed for compliance-first token d
 - **Token freezing** — lock specific amounts per wallet
 - **Governance-ready** — built-in vote delegation
 - **Gas-efficient** — permit-based approvals (no approve transaction needed)
-- **Cross-chain** — Superchain bridge support
 
 ### MultiSig Wallet
 
@@ -324,13 +323,27 @@ rwaToken.setForcedTransferManager(forcedTransferManagerAddress);
 
 ### Using Hardhat Ignition
 
+**Deploy All Contracts (Recommended):**
+
 ```bash
 # Set environment variables
 export MULTISIG_SIGNERS="0xAddr1,0xAddr2,0xAddr3"
 export MULTISIG_THRESHOLD=2
-export AUTHORITY=0xAccessManagerAddress
 
-# Deploy to a network
+# Deploy all contracts in correct order
+npx hardhat run scripts/deploy-all.ts --network base-sepolia
+```
+
+The `deploy-all.ts` script handles the full deployment in the correct order:
+1. MultiSig Wallet
+2. Access Manager (uses MultiSig as authority)
+3. RWA Token (uses Access Manager)
+4. Assets Registry (uses Access Manager)
+5. Forced Transfer Manager (uses Access Manager)
+
+**Deploy Individually:**
+
+```bash
 npx hardhat ignition deploy ignition/modules/AroMediaIncMultiSig.ts --network base-sepolia
 npx hardhat ignition deploy ignition/modules/AroMediaAccessManager.ts --network base-sepolia
 npx hardhat ignition deploy ignition/modules/AroMediaAssetsRegistry.ts --network base-sepolia
@@ -339,6 +352,21 @@ npx hardhat ignition deploy ignition/modules/ForcedTransferManager.ts --network 
 ```
 
 ### Verification
+
+**Verify All Contracts (Recommended):**
+
+```bash
+# Automatically reads deployed addresses and constructor args from Ignition logs
+npx hardhat run scripts/verify-all.ts --network base-sepolia
+```
+
+The `verify-all.ts` script:
+- Reads deployed addresses from `ignition/deployments/<chain>/deployed_addresses.json`
+- Extracts constructor arguments from Ignition's journal
+- Runs verification for each contract on the block explorer
+- Provides direct explorer links for verified contracts
+
+**Verify Individually:**
 
 ```bash
 npx hardhat verify --network base-sepolia <CONTRACT_ADDRESS> <CONSTRUCTOR_ARGS>
@@ -350,14 +378,13 @@ Deployed addresses are saved in `ignition/deployments/<network>/deployed_address
 
 ## Environment Variables
 
-| Variable                 | Required         | Description                                    |
-| ------------------------ | ---------------- | ---------------------------------------------- |
-| `PRIVATE_KEY`          | Yes              | Deployer wallet private key                    |
-| `MULTISIG_SIGNERS`     | Yes              | Comma-separated signer addresses               |
-| `MULTISIG_THRESHOLD`   | Yes              | Required signatures (e.g.,`2`)               |
-| `AUTHORITY`            | Yes              | Access Manager address (for managed contracts) |
-| `BASE_SEPOLIA_RPC_URL` | For deployment   | RPC endpoint                                   |
-| `BASESCAN_API_KEY`     | For verification | Block explorer API key                         |
+| Variable               | Required         | Description                              |
+| ---------------------- | ---------------- | ---------------------------------------- |
+| `WALLET_KEY`           | Yes              | Deployer wallet private key              |
+| `MULTISIG_SIGNERS`     | Yes              | Comma-separated signer addresses         |
+| `MULTISIG_THRESHOLD`   | Yes              | Required signatures (e.g., `2`)          |
+| `BASE_SEPOLIA_RPC_URL` | For deployment   | RPC endpoint                             |
+| `BASESCAN_API_KEY`     | For verification | Block explorer API key                   |
 
 See `.env.example` for a complete template.
 
