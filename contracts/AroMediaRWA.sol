@@ -5,7 +5,6 @@ pragma solidity ^0.8.27;
 import {AccessManaged} from "@openzeppelin/contracts/access/manager/AccessManaged.sol";
 import {ERC1363} from "@openzeppelin/contracts/token/ERC20/extensions/ERC1363.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {ERC20Bridgeable} from "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Bridgeable.sol";
 import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import {ERC20Freezable} from "lib/openzeppelin-community-contracts/token/ERC20/extensions/ERC20Freezable.sol";
 import {ERC20Pausable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
@@ -21,24 +20,13 @@ import {Nonces} from "@openzeppelin/contracts/utils/Nonces.sol";
  * @dev     Report Any Vulnerabilities to security@aro.media.
  * @notice  The Global Security Token Powering the ARO Media Private, Asset-Backed Ecosystem.
  */
-contract AroMediaRWA is ERC20, ERC20Bridgeable, ERC20Burnable, ERC20Pausable, AccessManaged, ERC1363, ERC20Permit, ERC20Votes, ERC20Freezable, ERC20Restricted {
-    address internal constant SUPERCHAIN_TOKEN_BRIDGE = 0x4200000000000000000000000000000000000028;
-    error Unauthorized();
+contract AroMediaRWA is ERC20, ERC20Burnable, ERC20Pausable, AccessManaged, ERC1363, ERC20Permit, ERC20Votes, ERC20Freezable, ERC20Restricted {
 
     constructor(address initialAuthority)
         ERC20("AroMediaRWA", "ARO")
         AccessManaged(initialAuthority)
         ERC20Permit("AroMediaRWA")
     {}
-
-    /**
-     * @dev Checks if the caller is the predeployed SuperchainTokenBridge. Reverts otherwise.
-     *
-     * IMPORTANT: The predeployed SuperchainTokenBridge is only available on chains in the Superchain.
-     */
-    function _checkTokenBridge(address caller) internal pure override {
-        if (caller != SUPERCHAIN_TOKEN_BRIDGE) revert Unauthorized();
-    }
 
     function pause() public restricted {
         _pause();
@@ -89,7 +77,7 @@ contract AroMediaRWA is ERC20, ERC20Bridgeable, ERC20Burnable, ERC20Pausable, Ac
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(ERC20Bridgeable, ERC1363)
+        override(ERC1363)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
