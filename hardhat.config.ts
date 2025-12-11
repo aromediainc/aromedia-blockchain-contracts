@@ -46,11 +46,7 @@ const config: HardhatUserConfig = {
   },
   defaultNetwork: 'hardhat',
   etherscan: {
-    apiKey: {
-     "mainnet": process.env.ETHERSCAN_API_KEY as string,
-     "sepolia": process.env.ETHERSCAN_API_KEY as string,
-     "base-sepolia": process.env.ETHERSCAN_API_KEY as string
-    },
+    apiKey: process.env.ETHERSCAN_API_KEY as string,
     customChains: [
       {
         network: "base-sepolia",
@@ -61,6 +57,9 @@ const config: HardhatUserConfig = {
         }
       }
     ]
+  },
+  sourcify: {
+    enabled: false
   },
 };
 
