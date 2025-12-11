@@ -1,7 +1,8 @@
+import { AroMediaAccessManager, AroMediaRWA } from "../typechain-types";
+import { loadFixture, time } from "@nomicfoundation/hardhat-toolbox/network-helpers";
+
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { loadFixture, time } from "@nomicfoundation/hardhat-toolbox/network-helpers";
-import { AroMediaAccessManager, AroMediaRWA } from "../typechain-types";
 
 describe("AroMediaRWA", function () {
   // Shared fixture for integration testing
@@ -22,9 +23,9 @@ describe("AroMediaRWA", function () {
 
     const tokenAddr = await rwaToken.getAddress();
 
-    // Configure roles: Set up MINTER_ROLE for restricted functions
-    const MINTER_ROLE = 1n;
-    const mintSelector = rwaToken.interface.getFunction("mint").selector;
+    // Configure roles: Set up ISSUER_ROLE for restricted functions
+    const ISSUER_ROLE = 1n;
+    const issueSelector = rwaToken.interface.getFunction("issue").selector;
     const pauseSelector = rwaToken.interface.getFunction("pause").selector;
     const unpauseSelector = rwaToken.interface.getFunction("unpause").selector;
     const freezeSelector = rwaToken.interface.getFunction("freeze").selector;
@@ -33,14 +34,14 @@ describe("AroMediaRWA", function () {
 
     await accessManager.connect(admin).setTargetFunctionRole(
       tokenAddr,
-      [mintSelector, pauseSelector, unpauseSelector, freezeSelector, allowUserSelector, disallowUserSelector],
-      MINTER_ROLE
+      [issueSelector, pauseSelector, unpauseSelector, freezeSelector, allowUserSelector, disallowUserSelector],
+      ISSUER_ROLE
     );
 
-    // Grant MINTER_ROLE to minter
-    await accessManager.connect(admin).grantRole(MINTER_ROLE, minter.address, 0);
+    // Grant ISSUER_ROLE to issuer (minter)
+    await accessManager.connect(admin).grantRole(ISSUER_ROLE, minter.address, 0);
 
-    return { accessManager, rwaToken, deployer, admin, minter, user1, user2, user3, MINTER_ROLE };
+    return { accessManager, rwaToken, deployer, admin, minter, user1, user2, user3, ISSUER_ROLE };
   }
 
   describe("Deployment", function () {
@@ -52,10 +53,15 @@ describe("AroMediaRWA", function () {
       expect(await rwaToken.decimals()).to.equal(18);
     });
 
-    it("Should have initial supply of zero", async function () {
-      const { rwaToken } = await loadFixture(deployRWATokenFixture);
+    it("Should have initial supply of 10M tokens issued to treasury", async function () {
+      const { rwaToken, accessManager } = await loadFixture(deployRWATokenFixture);
 
-      expect(await rwaToken.totalSupply()).to.equal(0);
+      const initialSupply = ethers.parseEther("10000000"); // 10M tokens
+      expect(await rwaToken.totalSupply()).to.equal(initialSupply);
+      
+      // Treasury (AccessManager) should hold initial tokens
+      const treasuryAddress = await accessManager.getAddress();
+      expect(await rwaToken.balanceOf(treasuryAddress)).to.equal(initialSupply);
     });
 
     it("Should return correct CLOCK_MODE", async function () {
@@ -96,47 +102,48 @@ describe("AroMediaRWA", function () {
     });
   });
 
-  describe("Minting", function () {
-    it("Should allow authorized minter to mint tokens", async function () {
+  describe("Issuance", function () {
+    it("Should allow authorized issuer to issue tokens", async function () {
       const { rwaToken, minter, user1 } = await loadFixture(deployRWATokenFixture);
 
       // First, allow the user (strict allowlist)
       await rwaToken.connect(minter).allowUser(user1.address);
 
       const amount = ethers.parseEther("1000");
+      const initialSupply = ethers.parseEther("10000000");
 
-      await expect(rwaToken.connect(minter).mint(user1.address, amount))
+      await expect(rwaToken.connect(minter).issue(user1.address, amount))
         .to.emit(rwaToken, "Transfer")
         .withArgs(ethers.ZeroAddress, user1.address, amount);
 
       expect(await rwaToken.balanceOf(user1.address)).to.equal(amount);
-      expect(await rwaToken.totalSupply()).to.equal(amount);
+      expect(await rwaToken.totalSupply()).to.equal(initialSupply + amount);
     });
 
-    it("Should revert when unauthorized user tries to mint", async function () {
+    it("Should revert when unauthorized user tries to issue", async function () {
       const { rwaToken, user1, user2 } = await loadFixture(deployRWATokenFixture);
 
       const amount = ethers.parseEther("1000");
 
       await expect(
-        rwaToken.connect(user1).mint(user2.address, amount)
+        rwaToken.connect(user1).issue(user2.address, amount)
       ).to.be.revertedWithCustomError(rwaToken, "AccessManagedUnauthorized");
     });
 
-    it("Should revert when minting to non-allowed user", async function () {
+    it("Should revert when issuing to non-allowed user", async function () {
       const { rwaToken, minter, user1 } = await loadFixture(deployRWATokenFixture);
 
       const amount = ethers.parseEther("1000");
 
-      // user1 is not allowed, minting should fail
+      // user1 is not allowed, issuance should fail
       await expect(
-        rwaToken.connect(minter).mint(user1.address, amount)
+        rwaToken.connect(minter).issue(user1.address, amount)
       ).to.be.revertedWithCustomError(rwaToken, "ERC20UserRestricted");
     });
   });
 
   describe("User Allowlist (ERC20Restricted)", function () {
-    it("Should allow minter to add users to allowlist", async function () {
+    it("Should allow issuer to add users to allowlist", async function () {
       const { rwaToken, minter, user1 } = await loadFixture(deployRWATokenFixture);
 
       // Initially user is not allowed
@@ -148,7 +155,7 @@ describe("AroMediaRWA", function () {
       expect(await rwaToken.isUserAllowed(user1.address)).to.be.true;
     });
 
-    it("Should allow minter to remove users from allowlist", async function () {
+    it("Should allow issuer to remove users from allowlist", async function () {
       const { rwaToken, minter, user1 } = await loadFixture(deployRWATokenFixture);
 
       // Add then remove
@@ -182,9 +189,9 @@ describe("AroMediaRWA", function () {
     it("Should block transfers from non-allowed users", async function () {
       const { rwaToken, minter, user1, user2 } = await loadFixture(deployRWATokenFixture);
 
-      // Allow user1 and mint to them
+      // Allow user1 and issue to them
       await rwaToken.connect(minter).allowUser(user1.address);
-      await rwaToken.connect(minter).mint(user1.address, ethers.parseEther("100"));
+      await rwaToken.connect(minter).issue(user1.address, ethers.parseEther("100"));
 
       // Try to transfer to non-allowed user2
       await expect(
@@ -199,9 +206,9 @@ describe("AroMediaRWA", function () {
       await rwaToken.connect(minter).allowUser(user1.address);
       await rwaToken.connect(minter).allowUser(user2.address);
 
-      // Mint to user1
+      // Issue to user1
       const amount = ethers.parseEther("100");
-      await rwaToken.connect(minter).mint(user1.address, amount);
+      await rwaToken.connect(minter).issue(user1.address, amount);
 
       // Transfer to user2
       const transferAmount = ethers.parseEther("50");
@@ -248,10 +255,10 @@ describe("AroMediaRWA", function () {
     it("Should block transfers when paused", async function () {
       const { rwaToken, minter, user1, user2 } = await loadFixture(deployRWATokenFixture);
 
-      // Setup: Allow users and mint
+      // Setup: Allow users and issue
       await rwaToken.connect(minter).allowUser(user1.address);
       await rwaToken.connect(minter).allowUser(user2.address);
-      await rwaToken.connect(minter).mint(user1.address, ethers.parseEther("100"));
+      await rwaToken.connect(minter).issue(user1.address, ethers.parseEther("100"));
 
       // Pause
       await rwaToken.connect(minter).pause();
@@ -262,14 +269,14 @@ describe("AroMediaRWA", function () {
       ).to.be.revertedWithCustomError(rwaToken, "EnforcedPause");
     });
 
-    it("Should block minting when paused", async function () {
+    it("Should block issuance when paused", async function () {
       const { rwaToken, minter, user1 } = await loadFixture(deployRWATokenFixture);
 
       await rwaToken.connect(minter).allowUser(user1.address);
       await rwaToken.connect(minter).pause();
 
       await expect(
-        rwaToken.connect(minter).mint(user1.address, ethers.parseEther("100"))
+        rwaToken.connect(minter).issue(user1.address, ethers.parseEther("100"))
       ).to.be.revertedWithCustomError(rwaToken, "EnforcedPause");
     });
 
@@ -279,7 +286,7 @@ describe("AroMediaRWA", function () {
       // Setup
       await rwaToken.connect(minter).allowUser(user1.address);
       await rwaToken.connect(minter).allowUser(user2.address);
-      await rwaToken.connect(minter).mint(user1.address, ethers.parseEther("100"));
+      await rwaToken.connect(minter).issue(user1.address, ethers.parseEther("100"));
 
       // Pause then unpause
       await rwaToken.connect(minter).pause();
@@ -295,17 +302,17 @@ describe("AroMediaRWA", function () {
     it("Should allow authorized user to freeze tokens", async function () {
       const { rwaToken, minter, user1 } = await loadFixture(deployRWATokenFixture);
 
-      // Setup: Allow and mint
+      // Setup: Allow and issue
       await rwaToken.connect(minter).allowUser(user1.address);
-      const mintAmount = ethers.parseEther("100");
-      await rwaToken.connect(minter).mint(user1.address, mintAmount);
+      const issueAmount = ethers.parseEther("100");
+      await rwaToken.connect(minter).issue(user1.address, issueAmount);
 
       // Freeze half
       const freezeAmount = ethers.parseEther("50");
       await rwaToken.connect(minter).freeze(user1.address, freezeAmount);
 
       expect(await rwaToken.frozen(user1.address)).to.equal(freezeAmount);
-      expect(await rwaToken.available(user1.address)).to.equal(mintAmount - freezeAmount);
+      expect(await rwaToken.available(user1.address)).to.equal(issueAmount - freezeAmount);
     });
 
     it("Should block transfers exceeding available (unfrozen) balance", async function () {
@@ -314,8 +321,8 @@ describe("AroMediaRWA", function () {
       // Setup
       await rwaToken.connect(minter).allowUser(user1.address);
       await rwaToken.connect(minter).allowUser(user2.address);
-      const mintAmount = ethers.parseEther("100");
-      await rwaToken.connect(minter).mint(user1.address, mintAmount);
+      const issueAmount = ethers.parseEther("100");
+      await rwaToken.connect(minter).issue(user1.address, issueAmount);
 
       // Freeze 60, leaving 40 available
       await rwaToken.connect(minter).freeze(user1.address, ethers.parseEther("60"));
@@ -332,7 +339,7 @@ describe("AroMediaRWA", function () {
       // Setup
       await rwaToken.connect(minter).allowUser(user1.address);
       await rwaToken.connect(minter).allowUser(user2.address);
-      await rwaToken.connect(minter).mint(user1.address, ethers.parseEther("100"));
+      await rwaToken.connect(minter).issue(user1.address, ethers.parseEther("100"));
 
       // Freeze 60, leaving 40 available
       await rwaToken.connect(minter).freeze(user1.address, ethers.parseEther("60"));
@@ -349,7 +356,7 @@ describe("AroMediaRWA", function () {
       const { rwaToken, minter, user1, user2 } = await loadFixture(deployRWATokenFixture);
 
       await rwaToken.connect(minter).allowUser(user1.address);
-      await rwaToken.connect(minter).mint(user1.address, ethers.parseEther("100"));
+      await rwaToken.connect(minter).issue(user1.address, ethers.parseEther("100"));
 
       await expect(
         rwaToken.connect(user2).freeze(user1.address, ethers.parseEther("50"))
@@ -361,7 +368,7 @@ describe("AroMediaRWA", function () {
 
       // Setup
       await rwaToken.connect(minter).allowUser(user1.address);
-      await rwaToken.connect(minter).mint(user1.address, ethers.parseEther("100"));
+      await rwaToken.connect(minter).issue(user1.address, ethers.parseEther("100"));
       await rwaToken.connect(minter).freeze(user1.address, ethers.parseEther("50"));
 
       expect(await rwaToken.frozen(user1.address)).to.equal(ethers.parseEther("50"));
@@ -381,7 +388,7 @@ describe("AroMediaRWA", function () {
       // Setup
       await rwaToken.connect(minter).allowUser(user1.address);
       const amount = ethers.parseEther("100");
-      await rwaToken.connect(minter).mint(user1.address, amount);
+      await rwaToken.connect(minter).issue(user1.address, amount);
 
       const burnAmount = ethers.parseEther("30");
       await expect(rwaToken.connect(user1).burn(burnAmount))
@@ -398,7 +405,7 @@ describe("AroMediaRWA", function () {
       await rwaToken.connect(minter).allowUser(user1.address);
       await rwaToken.connect(minter).allowUser(user2.address);
       const amount = ethers.parseEther("100");
-      await rwaToken.connect(minter).mint(user1.address, amount);
+      await rwaToken.connect(minter).issue(user1.address, amount);
 
       // user1 approves user2
       const burnAmount = ethers.parseEther("30");
@@ -419,7 +426,7 @@ describe("AroMediaRWA", function () {
 
       // Setup
       await rwaToken.connect(minter).allowUser(user1.address);
-      await rwaToken.connect(minter).mint(user1.address, ethers.parseEther("100"));
+      await rwaToken.connect(minter).issue(user1.address, ethers.parseEther("100"));
 
       const tokenAddress = await rwaToken.getAddress();
       const deadline = (await time.latest()) + 3600; // 1 hour from now
@@ -517,7 +524,7 @@ describe("AroMediaRWA", function () {
       await rwaToken.connect(minter).allowUser(user1.address);
       await rwaToken.connect(minter).allowUser(user2.address);
       const amount = ethers.parseEther("100");
-      await rwaToken.connect(minter).mint(user1.address, amount);
+      await rwaToken.connect(minter).issue(user1.address, amount);
 
       // Before delegation, voting power is 0
       expect(await rwaToken.getVotes(user1.address)).to.equal(0);
@@ -539,7 +546,7 @@ describe("AroMediaRWA", function () {
       // Setup
       await rwaToken.connect(minter).allowUser(user1.address);
       const amount = ethers.parseEther("100");
-      await rwaToken.connect(minter).mint(user1.address, amount);
+      await rwaToken.connect(minter).issue(user1.address, amount);
 
       // Self-delegate
       await rwaToken.connect(user1).delegate(user1.address);
@@ -555,7 +562,7 @@ describe("AroMediaRWA", function () {
       await rwaToken.connect(minter).allowUser(user1.address);
       await rwaToken.connect(minter).allowUser(user2.address);
       const amount = ethers.parseEther("100");
-      await rwaToken.connect(minter).mint(user1.address, amount);
+      await rwaToken.connect(minter).issue(user1.address, amount);
 
       // Both self-delegate
       await rwaToken.connect(user1).delegate(user1.address);
@@ -578,7 +585,7 @@ describe("AroMediaRWA", function () {
       // Setup
       await rwaToken.connect(minter).allowUser(user1.address);
       const amount = ethers.parseEther("100");
-      await rwaToken.connect(minter).mint(user1.address, amount);
+      await rwaToken.connect(minter).issue(user1.address, amount);
 
       // Self-delegate
       await rwaToken.connect(user1).delegate(user1.address);
@@ -589,8 +596,8 @@ describe("AroMediaRWA", function () {
       // Advance time
       await time.increase(60);
 
-      // Mint more
-      await rwaToken.connect(minter).mint(user1.address, ethers.parseEther("50"));
+      // Issue more
+      await rwaToken.connect(minter).issue(user1.address, ethers.parseEther("50"));
 
       // Check historical votes
       expect(await rwaToken.getPastVotes(user1.address, timestamp1)).to.equal(amount);
@@ -602,7 +609,7 @@ describe("AroMediaRWA", function () {
       const { rwaToken, minter, user1, user2 } = await loadFixture(deployRWATokenFixture);
 
       await rwaToken.connect(minter).allowUser(user1.address);
-      await rwaToken.connect(minter).mint(user1.address, ethers.parseEther("100"));
+      await rwaToken.connect(minter).issue(user1.address, ethers.parseEther("100"));
 
       const amount = ethers.parseEther("50");
       await expect(rwaToken.connect(user1).approve(user2.address, amount))
@@ -619,7 +626,7 @@ describe("AroMediaRWA", function () {
       await rwaToken.connect(minter).allowUser(user1.address);
       await rwaToken.connect(minter).allowUser(user2.address);
       await rwaToken.connect(minter).allowUser(user3.address);
-      await rwaToken.connect(minter).mint(user1.address, ethers.parseEther("100"));
+      await rwaToken.connect(minter).issue(user1.address, ethers.parseEther("100"));
 
       // user1 approves user2
       const approveAmount = ethers.parseEther("50");

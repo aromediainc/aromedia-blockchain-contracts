@@ -1,4 +1,5 @@
 import { AroMediaAccessManager, AroMediaAssetsRegistry, AroMediaRWA } from "../typechain-types";
+
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
@@ -237,25 +238,25 @@ describe("AroMediaAccessManager", function () {
     it("Should allow authorized caller to execute restricted functions on RWA token", async function () {
       const { accessManager, rwaToken, multiSigOwner, addr1 } = await loadFixture(deployFullIntegrationFixture);
 
-      const MINTER_ROLE = 1n;
+      const ISSUER_ROLE = 1n;
       const tokenAddr = await rwaToken.getAddress();
 
       // Get function selectors
-      const mintSelector = rwaToken.interface.getFunction("mint").selector;
+      const issueSelector = rwaToken.interface.getFunction("issue").selector;
       const allowUserSelector = rwaToken.interface.getFunction("allowUser").selector;
 
-      // Configure: Set role for mint and allowUser
-      await accessManager.connect(multiSigOwner).setTargetFunctionRole(tokenAddr, [mintSelector, allowUserSelector], MINTER_ROLE);
+      // Configure: Set role for issue and allowUser
+      await accessManager.connect(multiSigOwner).setTargetFunctionRole(tokenAddr, [issueSelector, allowUserSelector], ISSUER_ROLE);
 
-      // Grant minter role to addr1
-      await accessManager.connect(multiSigOwner).grantRole(MINTER_ROLE, addr1.address, 0);
+      // Grant issuer role to addr1
+      await accessManager.connect(multiSigOwner).grantRole(ISSUER_ROLE, addr1.address, 0);
 
       // Allow addr1 to receive tokens (strict allowlist)
       await rwaToken.connect(addr1).allowUser(addr1.address);
 
-      // addr1 should now be able to mint
+      // addr1 should now be able to issue
       const amount = ethers.parseEther("1000");
-      await expect(rwaToken.connect(addr1).mint(addr1.address, amount))
+      await expect(rwaToken.connect(addr1).issue(addr1.address, amount))
         .to.emit(rwaToken, "Transfer")
         .withArgs(ethers.ZeroAddress, addr1.address, amount);
 
