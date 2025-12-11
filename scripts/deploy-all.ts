@@ -64,6 +64,11 @@ const DEPLOYMENT_ORDER: DeploymentModule[] = [
     modulePath: "ignition/modules/AroMediaAssetsRegistry.ts",
     description: "Assets Registry",
   },
+  {
+    name: "ForcedTransferManager",
+    modulePath: "ignition/modules/ForcedTransferManager.ts",
+    description: "Forced Transfer Manager for Regulatory Compliance",
+  },
 ];
 
 async function main() {
