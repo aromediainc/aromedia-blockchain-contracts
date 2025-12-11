@@ -17,7 +17,7 @@
     <img src="https://img.shields.io/badge/OpenZeppelin-v5.5.0-4E5EE4.svg" alt="OpenZeppelin">
   </a>
   <a href="#testing">
-    <img src="https://img.shields.io/badge/Tests-108%20passing-brightgreen.svg" alt="Tests">
+    <img src="https://img.shields.io/badge/Tests-151%20passing-brightgreen.svg" alt="Tests">
   </a>
 </p>
 
@@ -34,34 +34,38 @@
 
 Aro Media is building the infrastructure layer for real-world asset tokenization. Our smart contracts enable organizations to create verifiable on-chain representations of physical and digital assets, govern them through secure multi-signature processes, and trade them as compliant security tokens.
 
-This repository contains the core protocol: four interdependent contracts that work together to provide end-to-end asset management with enterprise-grade security controls.
+This repository contains the core protocol: five interdependent contracts that work together to provide end-to-end asset management with enterprise-grade security controls.
 
 ---
 
 ## The Protocol
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                                                                     │
-│   ┌─────────────────┐         ┌─────────────────────────────────┐  │
-│   │                 │         │                                 │  │
-│   │   MultiSig      │────────▶│      Access Manager             │  │
-│   │   Wallet        │  owns   │   (Central Permission Hub)      │  │
-│   │                 │         │                                 │  │
-│   └─────────────────┘         └─────────────┬───────────────────┘  │
-│                                             │                       │
-│                                             │ authorizes            │
-│                               ┌─────────────┴───────────────┐      │
-│                               │                             │      │
-│                               ▼                             ▼      │
-│                   ┌───────────────────┐       ┌───────────────────┐│
-│                   │                   │       │                   ││
-│                   │  Assets Registry  │       │    RWA Token      ││
-│                   │     (ERC721)      │       │     (ERC20)       ││
-│                   │                   │       │                   ││
-│                   └───────────────────┘       └───────────────────┘│
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────┐
+│                                                                            │
+│   ┌─────────────────┐         ┌─────────────────────────────────┐          │
+│   │                 │         │                                 │          │
+│   │   MultiSig      │────────▶│      Access Manager             │          │
+│   │   Wallet        │  owns   │   (Central Permission Hub)      │          │
+│   │                 │         │                                 │          │
+│   └─────────────────┘         └─────────────┬───────────────────┘          │
+│                                             │                              │
+│                                             │ authorizes                   │
+│                      ┌──────────────────────┼──────────────────────┐       │
+│                      │                      │                      │       │
+│                      ▼                      ▼                      ▼       │
+│          ┌───────────────────┐  ┌───────────────────┐  ┌───────────────────┐
+│          │                   │  │                   │  │    Forced         │
+│          │  Assets Registry  │  │    RWA Token      │  │    Transfer       │
+│          │     (ERC721)      │  │     (ERC20)       │  │    Manager        │
+│          │                   │  │                   │  │                   │
+│          └─────────┬─────────┘  └─────────┬─────────┘  └────────┬──────────┘
+│                    │                      │                     │          │
+│                    └──────────────────────┴─────────────────────┘          │
+│                                    │                                       │
+│                          dossier proof + execution                         │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Access Manager
@@ -97,21 +101,34 @@ After deployment, the owner (MultiSig) must wire roles to contract functions:
 
 ```solidity
 // Wire all contracts in a single transaction
-accessManager.wireAllContracts(rwaTokenAddress, assetsRegistryAddress);
+accessManager.wireAllContracts(rwaTokenAddress, assetsRegistryAddress, forcedTransferManagerAddress);
 
 // Or wire individually
 accessManager.wireRWAToken(rwaTokenAddress);
 accessManager.wireAssetsRegistry(assetsRegistryAddress);
+accessManager.wireForcedTransferManager(forcedTransferManagerAddress);
 ```
 
 **AroMediaRWA (ERC-20):**
-| Function         | Required Role   |
-| ---------------- | --------------- |
-| `mint`           | MINTER (4)      |
-| `pause/unpause`  | PAUSER (6)      |
-| `allowUser`      | OPERATOR (7)    |
-| `disallowUser`   | OPERATOR (7)    |
-| `freeze`         | OPERATOR (7)    |
+| Function                   | Required Role       |
+| -------------------------- | ------------------- |
+| `issue`                    | MINTER (4)          |
+| `pause/unpause`            | PAUSER (6)          |
+| `allowUser`                | OPERATOR (7)        |
+| `disallowUser`             | OPERATOR (7)        |
+| `freeze`                   | OPERATOR (7)        |
+| `setForcedTransferManager` | PROTOCOL_ADMIN (1)  |
+
+**ForcedTransferManager:**
+| Function          | Required Role            |
+| ----------------- | ------------------------ |
+| `configure`       | ORG_ADMIN (0)            |
+| `initiate`        | TREASURY_CONTROLLER (2)  |
+| `approveTreasury` | TREASURY_CONTROLLER (2)  |
+| `approveAuditor`  | AUDITOR (8)              |
+| `approveOrgAdmin` | ORG_ADMIN (0)            |
+| `execute`         | TREASURY_CONTROLLER (2)  |
+| `cancel`          | ORG_ADMIN (0)            |
 
 **AroMediaAssetsRegistry (ERC-721):**
 | Function         | Required Role   |
@@ -146,6 +163,16 @@ A next-generation smart contract wallet for organizational governance.
 - ERC-4337 account abstraction (pay gas in tokens, batched transactions)
 - Modular extensions via ERC-7579
 - Can hold ETH, ERC-20, ERC-721, and ERC-1155 tokens
+
+### Forced Transfer Manager
+
+Regulatory-compliant forced transfer workflow for securities compliance and legal obligations.
+
+- **Three-party approval** — Treasury Controller, Auditor, and Org Admin must all sign off
+- **Dossier NFT proof** — Each transfer requires a linked NFT from the Assets Registry as verifiable documentation
+- **Separation of duties** — Initiator cannot self-approve
+- **Full audit trail** — All actions emit events for compliance tracking
+- **ERC-7943 compatible** — Standardized forced transfer interface
 
 ---
 
@@ -241,7 +268,7 @@ This enables compliance holds, dispute resolution, or staged vesting.
 
 ## Testing
 
-The test suite covers 108 scenarios across all four contracts:
+The test suite covers 151 scenarios across all five contracts:
 
 ```bash
 npm test
@@ -249,12 +276,13 @@ npm test
 
 Tests are organized by contract and use shared fixtures for realistic integration testing. Each test verifies both the happy path and error conditions, including event emissions.
 
-| Contract        | Tests | Coverage Focus                                           |
-| --------------- | ----- | -------------------------------------------------------- |
-| Access Manager  | 18    | Role management, target configuration, integration       |
-| Assets Registry | 31    | Minting, burning, pausing, enumeration                   |
-| MultiSig        | 23    | Signer management, signature validation, token receiving |
-| RWA Token       | 36    | Allowlist, freezing, voting, permits                     |
+| Contract               | Tests | Coverage Focus                                                |
+| ---------------------- | ----- | ------------------------------------------------------------- |
+| Access Manager         | 18    | Role management, target configuration, integration            |
+| Assets Registry        | 31    | Minting, burning, pausing, enumeration                        |
+| MultiSig               | 23    | Signer management, signature validation, token receiving      |
+| RWA Token              | 36    | Allowlist, freezing, voting, permits                          |
+| Forced Transfer Manager| 43    | Three-party approval workflow, dossier verification, execution|
 
 ---
 
@@ -264,8 +292,9 @@ Tests are organized by contract and use shared fixtures for realistic integratio
 
 1. **Deploy MultiSig** — This becomes your governance wallet
 2. **Deploy Access Manager** — Pass the MultiSig address as owner
-3. **Deploy Registry & Token** — Pass the Access Manager address as authority
+3. **Deploy Registry, Token & Forced Transfer Manager** — Pass the Access Manager address as authority
 4. **Configure Roles** — Grant roles and wire functions through the Access Manager
+5. **Link Contracts** — Configure ForcedTransferManager with token and registry addresses
 
 ### Post-Deployment Role Setup
 
@@ -273,12 +302,21 @@ After deploying all contracts, the MultiSig owner must:
 
 ```solidity
 // 1. Wire function permissions (as owner)
-accessManager.wireAllContracts(rwaTokenAddress, assetsRegistryAddress);
+accessManager.wireAllContracts(rwaTokenAddress, assetsRegistryAddress, forcedTransferManagerAddress);
 
 // 2. Grant roles to appropriate addresses (as admin)
-accessManager.grantRole(ROLE_MINTER, minterAddress, 0);      // Minting authority
-accessManager.grantRole(ROLE_PAUSER, safetyOfficer, 0);      // Emergency pause
-accessManager.grantRole(ROLE_OPERATOR, operatorAddress, 0);  // Allowlist management
+accessManager.grantRole(ROLE_MINTER, minterAddress, 0);                // Minting authority
+accessManager.grantRole(ROLE_PAUSER, safetyOfficer, 0);                // Emergency pause
+accessManager.grantRole(ROLE_OPERATOR, operatorAddress, 0);            // Allowlist management
+accessManager.grantRole(ROLE_PROTOCOL_ADMIN, protocolAdmin, 0);        // Protocol configuration
+accessManager.grantRole(ROLE_TREASURY_CONTROLLER, treasuryAddr, 0);    // Forced transfers
+accessManager.grantRole(ROLE_AUDITOR, auditorAddress, 0);              // Compliance signoff
+
+// 3. Configure ForcedTransferManager (as ORG_ADMIN)
+forcedTransferManager.configure(rwaTokenAddress, assetsRegistryAddress);
+
+// 4. Link ForcedTransferManager to RWA Token (as PROTOCOL_ADMIN)
+rwaToken.setForcedTransferManager(forcedTransferManagerAddress);
 ```
 
 ### Using Hardhat Ignition
@@ -294,6 +332,7 @@ npx hardhat ignition deploy ignition/modules/AroMediaIncMultiSig.ts --network ba
 npx hardhat ignition deploy ignition/modules/AroMediaAccessManager.ts --network base-sepolia
 npx hardhat ignition deploy ignition/modules/AroMediaAssetsRegistry.ts --network base-sepolia
 npx hardhat ignition deploy ignition/modules/AroMediaRWA.ts --network base-sepolia
+npx hardhat ignition deploy ignition/modules/ForcedTransferManager.ts --network base-sepolia
 ```
 
 ### Verification
@@ -342,11 +381,12 @@ The permission layer for all protocol contracts.
 
 **Role Wiring (Owner Only):**
 
-| Function                                    | What It Does                                     |
-| ------------------------------------------- | ------------------------------------------------ |
-| `wireRWAToken(rwaToken)`                    | Configure roles for RWA token functions          |
-| `wireAssetsRegistry(assetsRegistry)`        | Configure roles for Assets Registry functions    |
-| `wireAllContracts(rwaToken, assetsRegistry)`| Configure all managed contracts in one tx        |
+| Function                                                      | What It Does                                     |
+| ------------------------------------------------------------- | ------------------------------------------------ |
+| `wireRWAToken(rwaToken)`                                      | Configure roles for RWA token functions          |
+| `wireAssetsRegistry(assetsRegistry)`                          | Configure roles for Assets Registry functions    |
+| `wireForcedTransferManager(forcedTransferManager)`            | Configure roles for Forced Transfer Manager      |
+| `wireAllContracts(rwaToken, assetsRegistry, forcedTransfer)`  | Configure all managed contracts in one tx        |
 
 **Role Utilities:**
 
@@ -394,14 +434,16 @@ Base URI: `https://aro.media/asset-registry/`
 
 ERC-20 security token with compliance features.
 
-| Function                 | Who Can Call            | What It Does              |
-| ------------------------ | ----------------------- | ------------------------- |
-| `mint(to, amount)`     | Authorized role         | Create new tokens         |
-| `allowUser(user)`      | Authorized role         | Add to transfer allowlist |
-| `disallowUser(user)`   | Authorized role         | Remove from allowlist     |
-| `freeze(user, amount)` | Authorized role         | Lock tokens in a wallet   |
-| `delegate(delegatee)`  | Token holder            | Assign voting power       |
-| `permit(...)`          | Anyone (with valid sig) | Gasless approval          |
+| Function                         | Who Can Call              | What It Does                      |
+| -------------------------------- | ------------------------- | --------------------------------- |
+| `issue(to, amount)`              | Authorized role           | Create new tokens                 |
+| `allowUser(user)`                | Authorized role           | Add to transfer allowlist         |
+| `disallowUser(user)`             | Authorized role           | Remove from allowlist             |
+| `freeze(user, amount)`           | Authorized role           | Lock tokens in a wallet           |
+| `setForcedTransferManager(addr)` | PROTOCOL_ADMIN            | Link to ForcedTransferManager     |
+| `forcedTransfer(from, to, amt)`  | ForcedTransferManager     | Execute regulatory transfer       |
+| `delegate(delegatee)`            | Token holder              | Assign voting power               |
+| `permit(...)`                    | Anyone (with valid sig)   | Gasless approval                  |
 
 </details>
 
@@ -418,6 +460,48 @@ Smart contract wallet for governance.
 | `isValidSignature(hash, sig)` | Anyone          | ERC-1271 signature check   |
 
 Supports receiving ETH, ERC-20, ERC-721, and ERC-1155.
+
+</details>
+
+<details>
+<summary><strong>ForcedTransferManager</strong></summary>
+
+Regulatory-compliant forced transfer workflow with three-party approval.
+
+**Workflow:**
+1. TREASURY_CONTROLLER initiates with dossier NFT proof
+2. Different TREASURY_CONTROLLER approves (separation of duties)
+3. AUDITOR reviews and approves
+4. ORG_ADMIN gives final approval
+5. TREASURY_CONTROLLER executes the transfer
+
+**Configuration:**
+
+| Function                          | Who Can Call    | What It Does                          |
+| --------------------------------- | --------------- | ------------------------------------- |
+| `configure(token, registry)`      | ORG_ADMIN       | Set token and registry addresses      |
+| `setRWAToken(token)`              | ORG_ADMIN       | Update RWA token address              |
+| `setAssetsRegistry(registry)`     | ORG_ADMIN       | Update Assets Registry address        |
+
+**Initiation & Execution:**
+
+| Function                                     | Who Can Call         | What It Does                              |
+| -------------------------------------------- | -------------------- | ----------------------------------------- |
+| `initiate(from, to, amount, dossier, reason)`| TREASURY_CONTROLLER  | Create new forced transfer request        |
+| `approveTreasury(requestId)`                 | TREASURY_CONTROLLER  | Treasury signoff (not initiator)          |
+| `approveAuditor(requestId)`                  | AUDITOR              | Auditor compliance signoff                |
+| `approveOrgAdmin(requestId)`                 | ORG_ADMIN            | Final organizational approval             |
+| `execute(requestId)`                         | TREASURY_CONTROLLER  | Execute fully-approved transfer           |
+| `cancel(requestId)`                          | ORG_ADMIN            | Cancel pending/approved request           |
+
+**View Functions:**
+
+| Function                  | What It Does                                     |
+| ------------------------- | ------------------------------------------------ |
+| `getRequest(id)`          | Get full details of a forced transfer request    |
+| `getRequestCount()`       | Total number of requests created                 |
+| `isDossierUsed(tokenId)`  | Check if a dossier NFT has been used             |
+| `isFullyApproved(id)`     | Check if all three approvals are complete        |
 
 </details>
 
