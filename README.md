@@ -189,8 +189,8 @@ Regulatory-compliant forced transfer workflow for securities compliance and lega
 
 ```bash
 # Clone the repository
-git clone https://github.com/AroMedia/aromedia.git
-cd aromedia
+git clone https://github.com/aromediainc/aromedia-blockchain-contracts 
+cd aromedia-blockchain-contracts
 
 # Install dependencies
 npm install
