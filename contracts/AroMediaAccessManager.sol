@@ -163,7 +163,7 @@ contract AroMediaAccessManager is AccessManager, Ownable {
      * @notice Configure function permissions for the AroMediaRWA token contract
      * @param rwaToken Address of the AroMediaRWA contract
      * @dev Sets up the following role -> function mappings:
-     *      - ROLE_MINTER: mint
+     *      - ROLE_MINTER: issue
      *      - ROLE_PAUSER: pause, unpause
      *      - ROLE_OPERATOR: allowUser, disallowUser, freeze
      *      - ROLE_PROTOCOL_ADMIN: setForcedTransferManager
@@ -171,7 +171,7 @@ contract AroMediaAccessManager is AccessManager, Ownable {
      */
     function wireRWAToken(address rwaToken) external onlyOwner {
         // Minting: ROLE_MINTER
-        _setTargetFunctionRole(rwaToken, bytes4(keccak256("mint(address,uint256)")), ROLE_MINTER);
+        _setTargetFunctionRole(rwaToken, bytes4(keccak256("issue(address,uint256)")), ROLE_MINTER);
 
         // Pausing: ROLE_PAUSER
         _setTargetFunctionRole(rwaToken, bytes4(keccak256("pause()")), ROLE_PAUSER);
